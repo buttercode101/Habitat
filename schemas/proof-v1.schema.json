@@ -9,6 +9,18 @@
     "proof_version": {"const": "1"},
     "generated_at": {"type": "string", "format": "date-time"},
     "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "key_id", "agent_id", "public_key", "signature"],
+      "properties": {
+        "algorithm": {"const": "Ed25519"},
+        "key_id": {"type": ["string", "null"]},
+        "agent_id": {"type": ["string", "null"]},
+        "public_key": {"type": "string", "minLength": 1},
+        "signature": {"type": "string", "minLength": 1}
+      }
+    },
     "claim": {
       "type": "object",
       "additionalProperties": false,
