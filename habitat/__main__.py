@@ -44,8 +44,16 @@ def cmd_verify(a):
     expected=json.loads(a.evidence_expected) if a.evidence_expected else None;c=verify_claim(s,c,_evidence(a),a.query or a.github_issue,expected);print(json.dumps({'id':c.id,'status':c.status,'evidence':c.evidence},default=str));s.close();return 0
 def cmd_proof(a):
     s=get_store(a)
-    try: result=verify_and_prove(s,a.id) if a.reverify else proof_status(s,a.id);print(json.dumps(result,default=str,indent=2));return 0
-    except KeyError: print(json.dumps({'error':'claim_not_found'}));return 1
+    try:
+        result=verify_and_prove(s,a.id) if a.reverify else proof_status(s,a.id)
+        if a.output:
+            Path(a.output).write_text(json.dumps(result['proof'],default=str,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+            print(f'Wrote proof to {a.output}')
+        else:
+            print(json.dumps(result,default=str,indent=2))
+        return 0
+    except KeyError:
+        print(json.dumps({'error':'claim_not_found'}));return 1
     finally:s.close()
 def cmd_event(a):
     s=get_store(a);body=Path(a.file).read_bytes() if a.file else a.json.encode();secret=a.secret or (os.getenv(a.secret_env) if a.secret_env else None);sig=a.signature or (signature_for(secret,body) if secret else None)
@@ -73,7 +81,7 @@ def main(argv=None):
     x=sub.add_parser('generate');x.add_argument('-o','--output',default='dashboard.html');x.set_defaults(func=cmd_generate)
     x=sub.add_parser('claim');x.add_argument('claim');x.add_argument('--job');x.add_argument('--action');x.add_argument('--expected-status',default='ok');x.add_argument('--run-id');x.set_defaults(func=cmd_claim)
     x=sub.add_parser('verify');x.add_argument('--id');x.add_argument('--query');x.add_argument('--evidence-file');x.add_argument('--evidence-url');x.add_argument('--github-issue');x.add_argument('--token-env',default='GITHUB_TOKEN');x.add_argument('--evidence-expected');x.set_defaults(func=cmd_verify)
-    x=sub.add_parser('proof');x.add_argument('id');x.add_argument('--reverify',action='store_true');x.set_defaults(func=cmd_proof)
+    x=sub.add_parser('proof');x.add_argument('id');x.add_argument('--reverify',action='store_true');x.add_argument('-o','--output',help='write only the portable proof bundle to this JSON file');x.set_defaults(func=cmd_proof)
     x=sub.add_parser('event');x.add_argument('--file');x.add_argument('--json',default='');x.add_argument('--signature');x.add_argument('--secret');x.add_argument('--secret-env',default='HABITAT_WEBHOOK_SECRET');x.add_argument('--agent-id');x.add_argument('--agent-secret');x.add_argument('--no-signature',action='store_true');x.set_defaults(func=cmd_event)
     x=sub.add_parser('agents');x.set_defaults(func=cmd_agents)
     x=sub.add_parser('agent-add');x.add_argument('id');x.add_argument('name');x.add_argument('--permission',action='append',default=['submit_events']);x.add_argument('--secret');x.set_defaults(func=cmd_agent_add)
@@ -82,4 +90,4 @@ def main(argv=None):
     x=sub.add_parser('restore');x.add_argument('input');x.set_defaults(func=cmd_restore)
     x=sub.add_parser('serve');x.add_argument('--host',default='127.0.0.1');x.add_argument('--port',type=int,default=8787);x.add_argument('--secret-env',default='HABITAT_WEBHOOK_SECRET');x.add_argument('--allow-unsigned',action='store_true');x.set_defaults(func=lambda a:serve(a.db,a.host,a.port,os.getenv(a.secret_env),not a.allow_unsigned))
     args=p.parse_args(argv); return args.func(args)
-if __name__=='__main__':sys.exit(main())
+if __name__=='__main__':sys.exit(main(argv=None))
