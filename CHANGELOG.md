@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Added optional Ed25519 signing for portable proof bundles.
+- Added an explicit trust registry with key expiry and revocation semantics.
+- Added deterministic evidence policies for source/action/status, run binding, freshness, and required detail keys.
+- Added GitHub Actions coverage across Python 3.10–3.13 and the optional signing stack.
+
 ## 1.0.1
 
 - Added a tamper-evident SHA-256 hash chain for trusted actions.
