@@ -1,7 +1,10 @@
+import pytest
 from datetime import datetime, timezone, timedelta
 
 from habitat.proof_sign import generate_keypair, sign_proof
 from habitat.trust import TrustRegistry, TrustedKey
+
+pytest.importorskip("cryptography")
 
 
 def test_registry_requires_explicit_key_trust():
