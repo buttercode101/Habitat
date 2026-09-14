@@ -1,4 +1,5 @@
 import json, subprocess, sys
+from importlib import metadata
 from habitat.schema import Habitat, Action, Job, utcnow
 from habitat.store import Store
 from habitat.claims import Claim
@@ -30,7 +31,7 @@ def test_external_evidence_predicate(tmp_path):
 
 
 def test_package_metadata_and_entrypoint():
-    import tomllib
-    data=tomllib.loads(open('pyproject.toml','rb').read().decode())
-    assert data['project']['version']=='1.2.0'
-    assert data['project']['scripts']['habitat']=='habitat.__main__:main'
+    assert metadata.version('habitat') == '1.2.0'
+    entry_points = metadata.entry_points(group='console_scripts')
+    habitat = next(ep for ep in entry_points if ep.name == 'habitat')
+    assert habitat.value == 'habitat.__main__:main'
