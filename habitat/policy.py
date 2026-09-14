@@ -19,6 +19,7 @@ class EvidencePolicy:
     required_status: str | None = None
     require_run_id: bool = False
     max_age_seconds: int | None = None
+    max_future_seconds: int = 30
     required_detail_keys: tuple[str, ...] = ()
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -42,16 +43,20 @@ def evaluate_policy(policy: EvidencePolicy, evidence: dict[str, Any], now: datet
             for key in policy.required_detail_keys:
                 if key not in details:
                     reasons.append(f"detail_missing:{key}")
-    if policy.max_age_seconds is not None:
+    if policy.max_age_seconds is not None or policy.max_future_seconds is not None:
         timestamp = evidence.get("timestamp")
         if not timestamp:
-            reasons.append("timestamp_required")
+            if policy.max_age_seconds is not None or policy.max_future_seconds is not None:
+                reasons.append("timestamp_required")
         else:
             try:
                 observed = datetime.fromisoformat(timestamp)
                 current = now or datetime.now(observed.tzinfo)
-                if current - observed > timedelta(seconds=policy.max_age_seconds):
+                age = current - observed
+                if policy.max_age_seconds is not None and age > timedelta(seconds=policy.max_age_seconds):
                     reasons.append("evidence_stale")
+                if policy.max_future_seconds is not None and age < -timedelta(seconds=policy.max_future_seconds):
+                    reasons.append("evidence_from_future")
             except (TypeError, ValueError):
                 reasons.append("invalid_timestamp")
     return not reasons, reasons
