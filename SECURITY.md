@@ -6,6 +6,8 @@ Habitat protects the integrity of its local record of configured jobs, trusted a
 
 It does **not** claim to sandbox arbitrary code or make an already-compromised operating system trustworthy.
 
+The action ledger is **tamper-evident**: each recorded action is chained to the previous action with a SHA-256 digest, and claim verification refuses to treat the ledger as trusted when the chain is inconsistent. This detects modification, deletion, insertion, or incomplete ledger state after the integrity chain was established. It is not a remote or independently anchored attestation: an attacker with unrestricted database control could rewrite both the records and integrity metadata.
+
 ## Default boundaries
 
 - API binds to `127.0.0.1` by default.
@@ -16,6 +18,7 @@ It does **not** claim to sandbox arbitrary code or make an already-compromised o
 - Agent permissions are explicit and least-privilege by default.
 - Network claims tied to jobs require a run/correlation ID.
 - SQLite is opened with foreign keys and WAL mode.
+- Trusted action verification includes an integrity-chain check.
 
 ## Secrets
 
@@ -31,6 +34,7 @@ The agent registry stores a SHA-256 hash of an agent secret rather than the plai
 | Event replay | Persistent event ID |
 | Unauthorized agent | Agent identity + permission check |
 | Stale claim | Run/correlation binding |
+| Tampered trusted action | Chained action-integrity digest |
 | Oversized request | 256 KiB limit |
 | Malformed payload | Structural validation |
 | Arbitrary shell interpretation | `ShellAdapter` uses argv parsing by default |
@@ -55,7 +59,7 @@ For a shared or remote deployment:
 
 ## Incident response
 
-If an agent secret is suspected to be compromised, disable or replace that agent credential and review the event/action ledger for the affected period. Because Habitat is an audit system, do not erase evidence merely to hide the incident.
+If an agent secret is suspected to be compromised, disable or replace that agent credential and review the event/action ledger for the affected period. If the action-integrity check fails, treat trusted claims from the affected ledger as **inconclusive** until the record is restored or independently corroborated. Because Habitat is an audit system, do not erase evidence merely to hide the incident.
 
 ## Known non-goals
 
