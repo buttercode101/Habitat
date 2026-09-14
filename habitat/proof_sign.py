@@ -42,14 +42,17 @@ def generate_keypair() -> tuple[str, str]:
 
 def sign_proof(bundle: dict[str, Any], private_key_b64: str, key_id: str | None = None) -> dict[str, Any]:
     """Return a signed copy of a proof bundle."""
-    Ed25519PrivateKey, _, _ = _crypto()
-    private_raw = base64.b64decode(private_key_b64, validate=True)
+    Ed25519PrivateKey, _, serialization = _crypto()
+    try:
+        private_raw = base64.b64decode(private_key_b64, validate=True)
+    except Exception as exc:
+        raise ValueError("Invalid base64 Ed25519 private key") from exc
     if len(private_raw) != 32:
         raise ValueError("Ed25519 private key must be 32 raw bytes")
     signer = Ed25519PrivateKey.from_private_bytes(private_raw)
     unsigned = _unsigned(bundle)
     signature = signer.sign(_canonical(unsigned))
-    public_raw = signer.public_key().public_bytes_raw() if hasattr(signer.public_key(), "public_bytes_raw") else signer.public_key().public_bytes(__import__('cryptography').hazmat.primitives.serialization.Encoding.Raw, __import__('cryptography').hazmat.primitives.serialization.PublicFormat.Raw)
+    public_raw = signer.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
     signed = copy.deepcopy(unsigned)
     signed["signature"] = {
         "algorithm": "Ed25519",
