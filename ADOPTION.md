@@ -42,6 +42,16 @@ A developer should not have to replace an SDK, framework, model provider, or obs
 5. Verify claims against Habitat evidence.
 6. Export a proof bundle when another system needs to inspect the result.
 
+## Proof exchange
+
+The receiver does not need the producer's database or Habitat runtime. A producer can send the exported JSON proof bundle to another service, team, or agent; the receiver can independently validate its digest and claim/ledger relationships with:
+
+```bash
+python examples/proof_exchange.py proof.json
+```
+
+This is deliberately a file-level exchange primitive first. It avoids inventing a hosted proof network before the portable proof contract has real adoption.
+
 ## Why this is different
 
 Observability products are primarily optimized to answer:
