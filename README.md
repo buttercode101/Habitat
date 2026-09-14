@@ -14,7 +14,7 @@ That distinction is intentional. Habitat is not trying to replace tracing, evals
 
 ## Interoperability first
 
-Habitat does not invent another tracing protocol. `habitat.otel` provides a dependency-free bridge for OTel-style GenAI spans, using an existing `trace_id` as the Habitat `run_id` and projecting only accountability-relevant operations. See `OTEL.md` and `examples/otel_bridge.py`.
+Habitat does not invent another tracing protocol. `habitat.otel` provides a dependency-free bridge for OTel-style GenAI spans, using an existing `trace_id` as the Habitat `run_id` and projecting only accountability-relevant operations. See `OTEL.md`, `ADOPTION.md`, and `examples/otel_bridge.py`.
 
 ```text
 Agent / framework
@@ -40,6 +40,10 @@ Habitat can establish that a matching action was recorded, that the action ledge
 
 Habitat does **not** prove that an agent's private reasoning was correct, that a compromised host is trustworthy, or that a local database has independently anchored cryptographic truth. Those boundaries are deliberate and documented in `SECURITY.md`.
 
+## Adoption
+
+Keep the existing agent framework and observability stack. Add Habitat where a claim needs evidence another system can independently inspect. The intended path is **existing telemetry → Habitat accountability → verification → portable proof**, not framework replacement. See `ADOPTION.md`.
+
 ## Requirements
 
 - Python 3.10+
@@ -52,7 +56,7 @@ Habitat does **not** prove that an agent's private reasoning was correct, that a
 python -m pytest -q
 ```
 
-See `PROJECT.md`, `PROTOCOL.md`, `ARCHITECTURE.md`, `SECURITY.md`, and `PROOF.md` for the design and operating boundaries.
+See `PROJECT.md`, `PROTOCOL.md`, `ARCHITECTURE.md`, `SECURITY.md`, `PROOF.md`, and `ADOPTION.md` for the design and operating boundaries.
 
 ## License
 
