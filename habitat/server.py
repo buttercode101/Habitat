@@ -45,7 +45,7 @@ def make_handler(db_path,secret,require_signature=True):
             if length<=0 or length>MAX_EVENT_BYTES:self._send(413,{'error':'event_too_large'});return
             body=self.rfile.read(length);sig=self.headers.get('X-Habitat-Signature');agent_id=self.headers.get('X-Habitat-Agent');agent_secret=self.headers.get('X-Habitat-Agent-Secret');s=Store(db_path)
             try:
-                result=ingest_event(s,body,sig,secret,require_signature,agent_id,agent_secret or secret);self._send(200 if result.get('duplicate') else 202,result)
+                result=ingest_event(s,body,sig,secret,require_signature,agent_id,agent_secret);self._send(200 if result.get('duplicate') else 202,result)
             except PermissionError as e:self._send(401,{'error':str(e)})
             except ValueError as e:self._send(400,{'error':str(e)})
             finally:s.close()
