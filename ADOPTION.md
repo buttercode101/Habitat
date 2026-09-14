@@ -44,7 +44,15 @@ A developer should not have to replace an SDK, framework, model provider, or obs
 
 ## Proof exchange
 
-The receiver does not need the producer's database, Habitat runtime, or network service. A producer can send the exported JSON proof bundle to another service, team, or agent; the receiver can independently validate its digest and claim/ledger relationships.
+The receiver does not need the producer's database, Habitat runtime, or network service. A producer can export a portable JSON proof bundle and send it to another service, team, CI job, auditor, or agent; the receiver can independently validate its digest and claim/ledger relationships.
+
+The producer path is intentionally one command once the claim exists:
+
+```bash
+habitat proof <claim-id> --output proof.json
+```
+
+That writes **only** the portable proof bundle, so the resulting file can cross the system boundary without exposing the producer's database or runtime state.
 
 For a consumer that already has Habitat installed:
 
