@@ -22,9 +22,9 @@ jobs:
         run: python -m pip install --upgrade pip pytest
       - name: Install Habitat
         run: python -m pip install -e .
-      - name: Run tests
+      - name: Run core tests
         run: python -m pytest -q
       - name: Install signing extra
         run: python -m pip install -e '.[signing]'
-      - name: Run signing tests
-        run: python -m pytest -q tests/test_proof_sign.py
+      - name: Run signing and trust tests
+        run: python -m pytest -q tests/test_proof_sign.py tests/test_trust.py
