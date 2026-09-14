@@ -1,11 +1,14 @@
 [project]
 name = "habitat"
-version = "1.1.0"
+version = "1.2.0"
 description = "Local-first supervision and accountability runtime for autonomous agents"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = []
+
+[project.optional-dependencies]
+signing = ["cryptography>=42,<47"]
 
 [project.scripts]
 habitat = "habitat.__main__:main"
