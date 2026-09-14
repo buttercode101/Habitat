@@ -34,7 +34,10 @@ class Store:
         if "agent_id" not in cols: self.conn.execute("ALTER TABLE event ADD COLUMN agent_id TEXT")
         self.conn.execute("INSERT OR IGNORE INTO schema_meta(key,value) VALUES('version','1')")
         self.conn.execute("UPDATE schema_meta SET value=? WHERE key='version'",(str(SCHEMA_VERSION),))
-        self._bootstrap_action_integrity()
+        marker=self.conn.execute("SELECT value FROM schema_meta WHERE key='action_integrity_initialized'").fetchone()
+        if marker is None:
+            self._bootstrap_action_integrity()
+            self.conn.execute("INSERT INTO schema_meta(key,value) VALUES('action_integrity_initialized','1')")
     def close(self): self.conn.close()
     @staticmethod
     def _action_payload(a):
@@ -100,6 +103,8 @@ class Store:
         self.conn.execute("UPDATE agent SET last_seen_at=? WHERE id=?",(datetime.now().astimezone().isoformat(),agent_id)); self.conn.commit(); return True
 
     def verify_action_integrity(self):
+        marker=self.conn.execute("SELECT value FROM schema_meta WHERE key='action_integrity_initialized'").fetchone()
+        if not marker or marker[0] != '1': return False
         rows=self.conn.execute("SELECT ai.seq,ai.action_id,ai.prev_hash,ai.hash,a.* FROM action_integrity ai JOIN action a ON a.id=ai.action_id ORDER BY ai.seq").fetchall()
         prev=None
         if not rows and self.conn.execute("SELECT 1 FROM action LIMIT 1").fetchone(): return False
