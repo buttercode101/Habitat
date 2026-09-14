@@ -31,14 +31,16 @@ jobs:
       - name: Select proof
         id: proof
         shell: bash
+        env:
+          PROOF_INPUT: ${{ github.event.inputs.proof }}
         run: |
           set -euo pipefail
-          proof="${{ github.event.inputs.proof || 'proof.json' }}"
+          proof="${PROOF_INPUT:-proof.json}"
           if [[ ! -f "$proof" ]]; then
             echo "Proof file not found: $proof" >&2
             exit 1
           fi
-          echo "path=$proof" >> "$GITHUB_OUTPUT"
+          printf 'path=%s\n' "$proof" >> "$GITHUB_OUTPUT"
 
       - name: Verify proof
         run: python tools/verify_proof.py "${{ steps.proof.outputs.path }}"
