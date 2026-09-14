@@ -1,15 +1,17 @@
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
 
 from habitat.claims import Claim
 from habitat.events import Action
 from habitat.policy import EvidencePolicy
-from habitat.schema import utcnow
+from habitat.schema import Habitat, utcnow
 from habitat.store import Store
 from habitat.verify import verify_claim
 
 
 def make_store(tmp_path):
-    return Store(tmp_path / "habitat.db")
+    store = Store(tmp_path / "habitat.db")
+    store.save_habitat(Habitat("h1", "Test Habitat"))
+    return store
 
 
 def test_policy_cannot_be_bypassed_when_no_trusted_action(tmp_path):
