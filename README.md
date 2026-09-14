@@ -8,7 +8,7 @@ Habitat is deliberately smaller than a full observability or orchestration platf
 
 ## Why Habitat exists
 
-Agent observability is becoming crowded: platforms such as LangSmith and Langfuse focus on tracing, monitoring, evaluation, cost, and production debugging. Habitat starts one layer closer to accountability: **when an agent says “I did X,” what evidence does the system actually have for that statement?** citeturn0search0turn0search6
+Agent observability is becoming crowded: platforms such as LangSmith and Langfuse focus on tracing, monitoring, evaluation, cost, and production debugging. Habitat starts one layer closer to accountability: **when an agent says “I did X,” what evidence does the system actually have for that statement?**
 
 That distinction is intentional. Habitat is not trying to replace tracing, evals, or orchestration. It can sit underneath or beside those systems as a small evidence and supervision layer, especially where local-first operation and deterministic verification matter.
 
