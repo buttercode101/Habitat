@@ -15,6 +15,14 @@ def _bundle():
     return b
 
 
+def _digest(bundle):
+    import hashlib, json
+    d = dict(bundle)
+    d.pop("generated_at", None)
+    d.pop("content_sha256", None)
+    return hashlib.sha256(json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+
+
 def test_standalone_verifier_accepts_valid_bundle():
     result = verify_proof(_bundle())
     assert result["valid"] is True
@@ -33,10 +41,57 @@ def test_standalone_verifier_rejects_modified_bundle():
 def test_verified_cannot_claim_failed_ledger():
     bundle = _bundle()
     bundle["ledger"]["integrity"] = "failed"
-    import hashlib, json
-    d = dict(bundle)
-    d.pop("generated_at")
-    bundle["content_sha256"] = hashlib.sha256(json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+    bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
     assert result["valid"] is False
     assert "verified claim cannot have failed ledger integrity" in result["errors"]
+
+
+def test_verifier_rejects_cross_habitat_action_even_with_fresh_digest():
+    bundle = _bundle()
+    bundle["claim"] = {
+        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
+        "expected_status": "ok", "status": "verified", "evidence": {"action_id": "a1"}
+    }
+    bundle["ledger"]["actions"] = [{
+        "id": "a1", "habitat_id": "h2", "job_id": "j1", "action": "deploy",
+        "status": "ok", "run_id": "r1"
+    }]
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "ledger.actions[0] habitat_id does not match claim" in result["errors"]
+
+
+def test_verifier_rejects_cross_run_evidence_even_with_fresh_digest():
+    bundle = _bundle()
+    bundle["claim"] = {
+        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
+        "expected_status": "ok", "status": "verified", "run_id": "r1",
+        "evidence": {"action_id": "a1"}
+    }
+    bundle["ledger"]["actions"] = [{
+        "id": "a1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
+        "status": "ok", "run_id": "r2"
+    }]
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "ledger.actions[0] run_id does not match claim" in result["errors"]
+
+
+def test_verifier_rejects_evidence_action_mismatch():
+    bundle = _bundle()
+    bundle["claim"] = {
+        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
+        "expected_status": "ok", "status": "verified", "run_id": "r1",
+        "evidence": {"action_id": "a1"}
+    }
+    bundle["ledger"]["actions"] = [{
+        "id": "a1", "habitat_id": "h1", "job_id": "j1", "action": "restart",
+        "status": "ok", "run_id": "r1"
+    }]
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "claim evidence action does not match claim.action" in result["errors"]
