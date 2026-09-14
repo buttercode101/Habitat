@@ -75,7 +75,12 @@ class Store:
     def claims(self,limit=100):
         return [Claim(r["id"],r["habitat_id"],r["job_id"],r["claim"],r["action"],r["expected_status"],_dt(r["created_at"]),_dt(r["verified_at"]),r["status"],json.loads(r["evidence"]),r["run_id"]) for r in self.conn.execute("SELECT * FROM claim ORDER BY created_at DESC LIMIT ?",(limit,))]
     def save_event(self,event_id,habitat_id,event_type,received_at,signature_valid,payload,agent_id=None):
-        cur=self.conn.execute("INSERT OR IGNORE INTO event VALUES (?,?,?,?,?,?,?,?)",(event_id,habitat_id,event_type,received_at,int(signature_valid),json.dumps(payload,sort_keys=True),payload.get("correlation_id") or payload.get("run_id"),agent_id)); self.conn.commit(); return cur.rowcount==1
+        existing=self.conn.execute("SELECT habitat_id,type,payload,agent_id FROM event WHERE id=?",(event_id,)).fetchone()
+        if existing:
+            same=(existing["habitat_id"]==habitat_id and existing["type"]==event_type and json.loads(existing["payload"])==payload and existing["agent_id"]==agent_id)
+            if not same: raise ValueError("event_id_conflict")
+            return False
+        cur=self.conn.execute("INSERT INTO event VALUES (?,?,?,?,?,?,?,?)",(event_id,habitat_id,event_type,received_at,int(signature_valid),json.dumps(payload,sort_keys=True),payload.get("correlation_id") or payload.get("run_id"),agent_id)); self.conn.commit(); return cur.rowcount==1
     def events(self,limit=100):
         return [{"id":r["id"],"habitat_id":r["habitat_id"],"type":r["type"],"received_at":r["received_at"],"signature_valid":bool(r["signature_valid"]),"payload":json.loads(r["payload"]),"correlation_id":r["correlation_id"],"agent_id":r["agent_id"]} for r in self.conn.execute("SELECT * FROM event ORDER BY received_at DESC LIMIT ?",(limit,))]
     def active_signals(self,limit=100): return [x for x in self.signals() if x.resolved_at is None][:limit]
@@ -90,7 +95,8 @@ class Store:
         if not r or not r["enabled"]: return False
         perms=json.loads(r["permissions"])
         if permission not in perms and "*" not in perms:return False
-        if r["secret_hash"] and self.hash_secret(secret or "") != r["secret_hash"]:return False
+        if not r["secret_hash"]:return False
+        if self.hash_secret(secret or "") != r["secret_hash"]:return False
         self.conn.execute("UPDATE agent SET last_seen_at=? WHERE id=?",(datetime.now().astimezone().isoformat(),agent_id)); self.conn.commit(); return True
 
     def verify_action_integrity(self):
