@@ -23,3 +23,18 @@ def test_registry_rejects_revoked_or_expired_key():
     assert registry.verify(bundle)
     registry.revoke("agent-key")
     assert not registry.verify(bundle)
+
+
+def test_registry_enforces_bound_agent_identity():
+    private, public = generate_keypair()
+    bundle = sign_proof({"proof_version": "1"}, private, "agent-key", agent_id="agent-a")
+    registry = TrustRegistry([TrustedKey("agent-key", public, agent_id="agent-a")])
+    assert registry.verify(bundle)
+    assert not registry.verify(bundle, agent_id="agent-b")
+
+
+def test_registry_rejects_key_bound_to_different_signed_agent():
+    private, public = generate_keypair()
+    bundle = sign_proof({"proof_version": "1"}, private, "agent-key", agent_id="agent-b")
+    registry = TrustRegistry([TrustedKey("agent-key", public, agent_id="agent-a")])
+    assert not registry.verify(bundle)
