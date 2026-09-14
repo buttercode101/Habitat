@@ -33,8 +33,13 @@ def ingest_event(store,body,signature,secret,require_signature=True,agent_id=Non
     if not isinstance(p,dict):raise ValueError("event_must_be_object")
     eid,typ,hid=_validate(p,store); ok=valid_signature(secret or "",body,signature)
     if require_signature and not ok:raise PermissionError("invalid_signature")
-    declared_agent=p.get("agent_id") or agent_id
-    if declared_agent and not store.authenticate_agent(declared_agent,agent_secret or secret or "",PERMISSIONS[typ]): raise PermissionError("agent_not_authorized")
+    payload_agent=p.get("agent_id")
+    if payload_agent is not None and not isinstance(payload_agent,str):raise ValueError("invalid_agent_id")
+    if agent_id is not None and payload_agent is not None and payload_agent != agent_id:raise PermissionError("agent_identity_mismatch")
+    declared_agent=payload_agent or agent_id
+    if declared_agent:
+        if not agent_secret: raise PermissionError("agent_secret_required")
+        if not store.authenticate_agent(declared_agent,agent_secret,PERMISSIONS[typ]): raise PermissionError("agent_not_authorized")
     inserted=store.save_event(eid,hid,typ,utcnow().isoformat(),ok,p,declared_agent)
     result={"accepted":True,"duplicate":not inserted,"id":eid,"type":typ}
     if not inserted:return result
