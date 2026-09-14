@@ -13,9 +13,14 @@ def _matches_expected(data: Any, expected: dict[str, Any] | None) -> bool:
 def verify_claim(store: Store, claim: Claim, evidence_adapter: EvidenceAdapter|None=None, evidence_query: str|None=None, evidence_expected: dict[str,Any]|None=None) -> Claim:
     if claim.habitat_id != store.habitat().id:
         claim.status="rejected"; claim.evidence={"source":"habitat","reason":"habitat_mismatch"}; claim.verified_at=utcnow(); store.save_claim(claim); return claim
+    if not store.verify_action_integrity():
+        claim.status="inconclusive"; claim.evidence={"source":"habitat_trusted_ledger","reason":"action_ledger_integrity_check_failed"}; claim.verified_at=utcnow(); store.save_claim(claim); return claim
     actions=store.actions(5000)
     matches=[a for a in actions if (claim.job_id is None or a.job_id==claim.job_id) and (claim.action is None or a.action==claim.action) and (claim.run_id is None or a.run_id==claim.run_id)]
+    # A trusted ledger assertion without a run_id is deliberately not enough when a job/action is specified.
     if claim.run_id is None and (claim.job_id or claim.action):
+        # Legacy in-process API: a single unambiguous match remains supported.
+        # Network claim submissions are stricter and require a run/correlation id.
         if len(matches) == 1:
             trusted = matches[0] if matches[0].status == claim.expected_status else None
             if trusted:
