@@ -26,7 +26,7 @@ claim verification
 portable proof
       |
       v
-independent verifier
+zero-install verifier
 ```
 
 The OTel bridge is intentionally dependency-free and projects only accountability-relevant operations. It reuses an existing trace ID as the Habitat run ID rather than creating a competing tracing identity. See `OTEL.md` and `examples/otel_bridge.py`.
@@ -44,13 +44,21 @@ A developer should not have to replace an SDK, framework, model provider, or obs
 
 ## Proof exchange
 
-The receiver does not need the producer's database or Habitat runtime. A producer can send the exported JSON proof bundle to another service, team, or agent; the receiver can independently validate its digest and claim/ledger relationships with:
+The receiver does not need the producer's database, Habitat runtime, or network service. A producer can send the exported JSON proof bundle to another service, team, or agent; the receiver can independently validate its digest and claim/ledger relationships.
+
+For a consumer that already has Habitat installed:
 
 ```bash
 python examples/proof_exchange.py proof.json
 ```
 
-This is deliberately a file-level exchange primitive first. It avoids inventing a hosted proof network before the portable proof contract has real adoption.
+For a true zero-install consumer, copy the single standard-library file `tools/verify_proof.py` alongside the proof and run:
+
+```bash
+python tools/verify_proof.py proof.json
+```
+
+The standalone verifier intentionally proves only bundle integrity and internal claim/ledger consistency. It does not establish publisher identity or external-world truth. This is deliberately a file-level exchange primitive first; it avoids inventing a hosted proof network before the portable proof contract has real adoption.
 
 ## Why this is different
 
