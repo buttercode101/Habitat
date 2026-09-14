@@ -32,5 +32,5 @@ def test_external_evidence_predicate(tmp_path):
 def test_package_metadata_and_entrypoint():
     import tomllib
     data=tomllib.loads(open('pyproject.toml','rb').read().decode())
-    assert data['project']['version']=='1.0.0'
+    assert data['project']['version']=='1.2.0'
     assert data['project']['scripts']['habitat']=='habitat.__main__:main'
