@@ -1,7 +1,8 @@
 """Minimal proof exchange demo.
 
-Producer side exports a Habitat proof bundle. Consumer side verifies the
-bundle without importing Habitat's runtime or accessing the producer DB.
+Consumer side verifies a Habitat proof bundle from a local JSON file without
+accessing the producer's Habitat database or network service. The verifier
+uses only the proof bundle and Habitat's standalone proof-verification module.
 
 Usage:
     python examples/proof_exchange.py proof.json
@@ -19,8 +20,7 @@ def main() -> int:
         print("usage: python examples/proof_exchange.py proof.json", file=sys.stderr)
         return 2
 
-    path = sys.argv[1]
-    result = verify_file(path)
+    result = verify_file(sys.argv[1])
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0 if result["valid"] else 1
 
