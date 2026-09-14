@@ -1,0 +1,83 @@
+"""Portable, deterministic proof bundles for Habitat claim decisions.
+
+A proof bundle is deliberately small: it carries the claim, verdict, evidence,
+relevant trusted actions, ledger-integrity result, and a content hash. It does
+not pretend to be a cryptographic attestation of the outside world; it proves
+what Habitat observed and whether its own evidence chain was intact.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+from typing import Any
+
+from .schema import utcnow
+
+
+def _canonical(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _action_dict(action: Any) -> dict[str, Any]:
+    return {
+        "id": action.id,
+        "habitat_id": action.habitat_id,
+        "job_id": action.job_id,
+        "timestamp": action.timestamp.isoformat(),
+        "actor": action.actor,
+        "action": action.action,
+        "status": action.status,
+        "details": action.details,
+        "run_id": action.run_id,
+    }
+
+
+def build_proof(store: Any, claim_id: str) -> dict[str, Any]:
+    """Build a portable proof bundle for one stored claim.
+
+    The bundle is deterministic except for ``generated_at``. The hash covers
+    every field except that timestamp so the same observed evidence produces
+    the same content digest.
+    """
+    claim = next((c for c in store.claims(10000) if c.id == claim_id), None)
+    if claim is None:
+        raise KeyError(f"Unknown claim: {claim_id}")
+
+    integrity_ok = store.verify_action_integrity()
+    actions = [a for a in store.actions(10000) if not claim.run_id or a.run_id == claim.run_id]
+    actions = sorted(actions, key=lambda a: (a.timestamp, a.id))
+
+    bundle: dict[str, Any] = {
+        "proof_version": "1",
+        "generated_at": utcnow().isoformat(),
+        "claim": {
+            "id": claim.id,
+            "habitat_id": claim.habitat_id,
+            "job_id": claim.job_id,
+            "claim": claim.claim,
+            "action": claim.action,
+            "expected_status": claim.expected_status,
+            "created_at": claim.created_at.isoformat(),
+            "verified_at": claim.verified_at.isoformat() if claim.verified_at else None,
+            "status": claim.status,
+            "evidence": claim.evidence,
+            "run_id": claim.run_id,
+        },
+        "ledger": {
+            "integrity": "intact" if integrity_ok else "failed",
+            "actions": [_action_dict(a) for a in actions],
+        },
+    }
+    digest_input = dict(bundle)
+    digest_input.pop("generated_at")
+    bundle["content_sha256"] = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
+    return bundle
+
+
+def export_proof(store: Any, claim_id: str, path: str) -> dict[str, Any]:
+    """Write a proof bundle as UTF-8 JSON and return the bundle."""
+    bundle = build_proof(store, claim_id)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(bundle, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+    return bundle
