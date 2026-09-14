@@ -82,4 +82,4 @@ def main(argv=None):
     x=sub.add_parser('restore');x.add_argument('input');x.set_defaults(func=cmd_restore)
     x=sub.add_parser('serve');x.add_argument('--host',default='127.0.0.1');x.add_argument('--port',type=int,default=8787);x.add_argument('--secret-env',default='HABITAT_WEBHOOK_SECRET');x.add_argument('--allow-unsigned',action='store_true');x.set_defaults(func=lambda a:serve(a.db,a.host,a.port,os.getenv(a.secret_env),not a.allow_unsigned))
     args=p.parse_args(argv); return args.func(args)
-if __name__=='__main__':sys.exit(main(argv))
+if __name__=='__main__':sys.exit(main())
