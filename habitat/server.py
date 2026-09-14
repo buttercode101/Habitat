@@ -6,10 +6,11 @@ from urllib.parse import urlparse
 from .events import ingest_event,MAX_EVENT_BYTES
 from .store import Store
 from .generate import render_dashboard
+from .verify_api import proof_status, verify_and_prove
 
 def make_handler(db_path,secret,require_signature=True):
     class Handler(BaseHTTPRequestHandler):
-        server_version='Habitat/1.0'
+        server_version='Habitat/1.1'
         def _send(self,code,payload):
             raw=json.dumps(payload,default=str).encode();self.send_response(code);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(raw)));self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw)
         def do_GET(self):
@@ -20,12 +21,21 @@ def make_handler(db_path,secret,require_signature=True):
                 elif path=='/v1/status':
                     h=s.habitat();self._send(200,{'id':h.id,'name':h.name,'status':h.status,'model':h.model,'jobs':len(s.jobs()),'active_signals':len(s.active_signals()),'agents':len(s.agents())})
                 elif path=='/v1/claims':self._send(200,[c.__dict__ for c in s.claims()])
+                elif path.startswith('/v1/claims/') and path.endswith('/proof'):
+                    claim_id=path[len('/v1/claims/'):-len('/proof')].strip('/')
+                    if not claim_id:self._send(400,{'error':'missing_claim_id'})
+                    else:self._send(200,proof_status(s,claim_id))
+                elif path.startswith('/v1/claims/') and path.endswith('/verify'):
+                    claim_id=path[len('/v1/claims/'):-len('/verify')].strip('/')
+                    if not claim_id:self._send(400,{'error':'missing_claim_id'})
+                    else:self._send(200,verify_and_prove(s,claim_id))
                 elif path=='/v1/signals':self._send(200,[x.__dict__ for x in s.active_signals()])
                 elif path=='/v1/events':self._send(200,s.events())
                 elif path=='/v1/actions':self._send(200,[x.__dict__ for x in s.actions()])
                 elif path=='/v1/agents':self._send(200,s.agents())
                 elif path=='/healthz':self._send(200,{'ok':True})
                 else:self._send(404,{'error':'not_found'})
+            except KeyError:self._send(404,{'error':'claim_not_found'})
             except RuntimeError as e:self._send(503,{'error':str(e)})
             finally:s.close()
         def do_POST(self):
