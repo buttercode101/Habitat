@@ -1,0 +1,44 @@
+name: Verify Habitat proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      proof:
+        description: Path to a Habitat proof JSON bundle
+        required: true
+        default: proof.json
+  push:
+    paths:
+      - 'proof.json'
+      - 'proofs/**/*.json'
+      - 'tools/verify_proof.py'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Select proof
+        id: proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="${{ github.event.inputs.proof || 'proof.json' }}"
+          if [[ ! -f "$proof" ]]; then
+            echo "Proof file not found: $proof" >&2
+            exit 1
+          fi
+          echo "path=$proof" >> "$GITHUB_OUTPUT"
+
+      - name: Verify proof
+        run: python tools/verify_proof.py "${{ steps.proof.outputs.path }}"
