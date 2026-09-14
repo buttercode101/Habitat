@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habitat-protocol.dev/schemas/proof-v1.schema.json",
+  "$id": "https://github.com/buttercode101/Habitat/blob/main/schemas/proof-v1.schema.json",
   "title": "Habitat Proof Bundle v1",
   "type": "object",
   "additionalProperties": false,
@@ -18,10 +18,10 @@
         "habitat_id": {"type": "string", "minLength": 1},
         "job_id": {"type": ["string", "null"]},
         "claim": {"type": "string"},
-        "action": {"type": "string"},
+        "action": {"type": ["string", "null"]},
         "expected_status": {"type": "string"},
         "created_at": {"type": "string", "format": "date-time"},
-        "verified_at": {"type": ["string", "null"], "format": "date-time"},
+        "verified_at": {"type": ["string", "null"]},
         "status": {"type": "string"},
         "evidence": {"type": "object"},
         "run_id": {"type": ["string", "null"]}
