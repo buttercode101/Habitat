@@ -7,7 +7,7 @@ from typing import Any
 from .schema import Habitat, Job, Signal, Action
 from .claims import Claim
 
-SCHEMA_VERSION=2
+SCHEMA_VERSION=3
 SCHEMA="""
 CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS habitat (id TEXT PRIMARY KEY, name TEXT NOT NULL, model TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, status TEXT NOT NULL);
@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS claim (id TEXT PRIMARY KEY, habitat_id TEXT NOT NULL,
 CREATE TABLE IF NOT EXISTS event (id TEXT PRIMARY KEY, habitat_id TEXT NOT NULL, type TEXT NOT NULL, received_at TEXT NOT NULL, signature_valid INTEGER NOT NULL, payload TEXT NOT NULL, correlation_id TEXT, agent_id TEXT);
 CREATE TABLE IF NOT EXISTS agent (id TEXT PRIMARY KEY, habitat_id TEXT NOT NULL, name TEXT NOT NULL, enabled INTEGER NOT NULL, permissions TEXT NOT NULL, secret_hash TEXT, created_at TEXT NOT NULL, last_seen_at TEXT);
 CREATE INDEX IF NOT EXISTS idx_action_run ON action(run_id);
+CREATE TABLE IF NOT EXISTS action_integrity (seq INTEGER PRIMARY KEY AUTOINCREMENT, action_id TEXT NOT NULL UNIQUE, prev_hash TEXT, hash TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_claim_run ON claim(run_id);
 CREATE INDEX IF NOT EXISTS idx_event_received ON event(received_at);
 """
@@ -33,11 +34,33 @@ class Store:
         if "agent_id" not in cols: self.conn.execute("ALTER TABLE event ADD COLUMN agent_id TEXT")
         self.conn.execute("INSERT OR IGNORE INTO schema_meta(key,value) VALUES('version','1')")
         self.conn.execute("UPDATE schema_meta SET value=? WHERE key='version'",(str(SCHEMA_VERSION),))
+        self._bootstrap_action_integrity()
     def close(self): self.conn.close()
+    @staticmethod
+    def _action_payload(a):
+        return {"id":a.id,"habitat_id":a.habitat_id,"job_id":a.job_id,"timestamp":a.timestamp.isoformat(),"actor":a.actor,"action":a.action,"status":a.status,"details":a.details,"run_id":a.run_id}
+    @classmethod
+    def _action_hash(cls,a,prev_hash):
+        payload={"prev_hash":prev_hash,"action":cls._action_payload(a)}
+        return hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+    def _bootstrap_action_integrity(self):
+        if self.conn.execute("SELECT 1 FROM action_integrity LIMIT 1").fetchone(): return
+        rows=self.conn.execute("SELECT * FROM action ORDER BY timestamp,id").fetchall()
+        prev=None
+        for r in rows:
+            a=Action(r["id"],r["habitat_id"],_dt(r["timestamp"]),r["actor"],r["action"],r["status"],r["job_id"],json.loads(r["details"]),r["run_id"])
+            digest=self._action_hash(a,prev)
+            self.conn.execute("INSERT INTO action_integrity(action_id,prev_hash,hash) VALUES(?,?,?)",(a.id,prev,digest)); prev=digest
     def save_habitat(self,h): self.conn.execute("INSERT OR REPLACE INTO habitat VALUES (?,?,?,?,?,?)",(h.id,h.name,h.model,h.created_at.isoformat(),h.updated_at.isoformat(),h.status)); self.conn.commit()
     def save_job(self,j): self.conn.execute("INSERT OR REPLACE INTO job VALUES (?,?,?,?,?,?,?,?,?,?)",(j.id,j.habitat_id,j.name,j.schedule,int(j.enabled),j.command,j.last_run_at.isoformat() if j.last_run_at else None,j.last_status,j.failure_streak,j.last_error)); self.conn.commit()
     def save_signal(self,s): self.conn.execute("INSERT OR REPLACE INTO signal VALUES (?,?,?,?,?,?,?,?,?,?)",(s.id,s.habitat_id,s.job_id,s.type,s.severity,s.code,s.message,s.detected_at.isoformat(),s.resolved_at.isoformat() if s.resolved_at else None,json.dumps(s.data))); self.conn.commit()
-    def save_action(self,a): self.conn.execute("INSERT OR REPLACE INTO action VALUES (?,?,?,?,?,?,?,?,?)",(a.id,a.habitat_id,a.job_id,a.timestamp.isoformat(),a.actor,a.action,a.status,json.dumps(a.details),a.run_id)); self.conn.commit()
+    def save_action(self,a):
+        prev=self.conn.execute("SELECT hash FROM action_integrity ORDER BY seq DESC LIMIT 1").fetchone()
+        prev_hash=prev[0] if prev else None
+        digest=self._action_hash(a,prev_hash)
+        self.conn.execute("INSERT INTO action VALUES (?,?,?,?,?,?,?,?,?)",(a.id,a.habitat_id,a.job_id,a.timestamp.isoformat(),a.actor,a.action,a.status,json.dumps(a.details),a.run_id))
+        self.conn.execute("INSERT INTO action_integrity(action_id,prev_hash,hash) VALUES(?,?,?)",(a.id,prev_hash,digest))
+        self.conn.commit()
     def habitat(self):
         r=self.conn.execute("SELECT * FROM habitat LIMIT 1").fetchone()
         if not r: raise RuntimeError("No Habitat initialized")
@@ -69,3 +92,14 @@ class Store:
         if permission not in perms and "*" not in perms:return False
         if r["secret_hash"] and self.hash_secret(secret or "") != r["secret_hash"]:return False
         self.conn.execute("UPDATE agent SET last_seen_at=? WHERE id=?",(datetime.now().astimezone().isoformat(),agent_id)); self.conn.commit(); return True
+
+    def verify_action_integrity(self):
+        rows=self.conn.execute("SELECT ai.seq,ai.action_id,ai.prev_hash,ai.hash,a.* FROM action_integrity ai JOIN action a ON a.id=ai.action_id ORDER BY ai.seq").fetchall()
+        prev=None
+        if not rows and self.conn.execute("SELECT 1 FROM action LIMIT 1").fetchone(): return False
+        if rows and len(rows) != self.conn.execute("SELECT COUNT(*) FROM action").fetchone()[0]: return False
+        for r in rows:
+            a=Action(r["id"],r["habitat_id"],_dt(r["timestamp"]),r["actor"],r["action"],r["status"],r["job_id"],json.loads(r["details"]),r["run_id"])
+            if r["prev_hash"] != prev or r["hash"] != self._action_hash(a,prev): return False
+            prev=r["hash"]
+        return True
