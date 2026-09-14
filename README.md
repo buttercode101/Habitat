@@ -12,6 +12,20 @@ Agent observability is becoming crowded: platforms such as LangSmith and Langfus
 
 That distinction is intentional. Habitat is not trying to replace tracing, evals, or orchestration. It can sit underneath or beside those systems as a small evidence and supervision layer, especially where local-first operation and deterministic verification matter.
 
+## Interoperability first
+
+Habitat does not invent another tracing protocol. `habitat.otel` provides a dependency-free bridge for OTel-style GenAI spans, using an existing `trace_id` as the Habitat `run_id` and projecting only accountability-relevant operations. See `OTEL.md` and `examples/otel_bridge.py`.
+
+```text
+Agent / framework
+      ↓
+OpenTelemetry
+      ↓
+Habitat bridge
+      ↓
+Trusted ledger → Verification → Portable proof
+```
+
 ## Core model
 
 ```text
@@ -38,7 +52,7 @@ Habitat does **not** prove that an agent's private reasoning was correct, that a
 python -m pytest -q
 ```
 
-See `PROJECT.md`, `PROTOCOL.md`, `ARCHITECTURE.md`, and `SECURITY.md` for the design and operating boundaries.
+See `PROJECT.md`, `PROTOCOL.md`, `ARCHITECTURE.md`, `SECURITY.md`, and `PROOF.md` for the design and operating boundaries.
 
 ## License
 
