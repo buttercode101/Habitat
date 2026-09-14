@@ -95,3 +95,19 @@ def test_verifier_rejects_evidence_action_mismatch():
     result = verify_proof(bundle)
     assert result["valid"] is False
     assert "claim evidence action does not match claim.action" in result["errors"]
+
+
+def test_verifier_accepts_valid_correlated_evidence():
+    bundle = _bundle()
+    bundle["claim"] = {
+        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
+        "expected_status": "ok", "status": "verified", "run_id": "r1",
+        "evidence": {"action_id": "a1"}
+    }
+    bundle["ledger"]["actions"] = [{
+        "id": "a1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
+        "status": "ok", "run_id": "r1"
+    }]
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is True
