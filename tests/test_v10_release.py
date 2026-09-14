@@ -32,7 +32,6 @@ def test_claim_requires_run_over_network(tmp_path):
 
 def test_backup_restore(tmp_path):
  s=make(tmp_path);s.close();b=backup(tmp_path/'h.db',tmp_path/'backup.db');assert b.exists();restore(b,tmp_path/'restored.db');r=Store(tmp_path/'restored.db');assert r.habitat().id=='h';r.close()
-
 def test_doctor_reports_core_checks(tmp_path,monkeypatch):
  s=make(tmp_path);s.close();monkeypatch.setenv('HABITAT_WEBHOOK_SECRET','x');checks=diagnose(tmp_path/'h.db');assert all(ok for _,ok,_ in checks)
 def test_http_server_signed_event(tmp_path):
@@ -53,7 +52,6 @@ def test_http_dashboard_is_live_surface(tmp_path):
     try:
         r=urlopen(f'http://127.0.0.1:{server.server_port}/dashboard');body=r.read().decode();assert 'Demo' in body or 'H' in body;assert 'Jobs &amp; health' in body or 'Jobs & health' in body
     finally:server.shutdown();server.server_close()
-
 def test_tampered_action_ledger_cannot_verify_claim(tmp_path):
     from habitat.claims import Claim
     from habitat.verify import verify_claim
@@ -61,3 +59,24 @@ def test_tampered_action_ledger_cannot_verify_claim(tmp_path):
     s.conn.execute("UPDATE action SET status='failed' WHERE id='a'"); s.conn.commit()
     c=Claim.new('h','done','j','run_job','ok'); c.run_id='r1'; s.save_claim(c)
     out=verify_claim(s,c); assert out.status=='inconclusive'; assert out.evidence['reason']=='action_ledger_integrity_check_failed'; s.close()
+
+def test_policy_can_only_downgrade_verified_claim(tmp_path):
+    from habitat.claims import Claim
+    from habitat.verify import verify_claim
+    from habitat.policy import EvidencePolicy
+    s=make(tmp_path); s.save_action(Action('a','h',utcnow(),'agent','run_job','ok','j',{},'r1'))
+    c=Claim.new('h','done','j','run_job','ok'); c.run_id='r1'; s.save_claim(c)
+    policy=EvidencePolicy('strict', required_detail_keys=('deployment_id',))
+    out=verify_claim(s,c,policy=policy)
+    assert out.status=='rejected'
+    assert out.evidence['policy']['status']=='denied'
+    s.close()
+
+def test_policy_does_not_turn_missing_evidence_into_verified(tmp_path):
+    from habitat.claims import Claim
+    from habitat.verify import verify_claim
+    from habitat.policy import EvidencePolicy
+    s=make(tmp_path); c=Claim.new('h','done','j','run_job','ok'); c.run_id='missing'; s.save_claim(c)
+    out=verify_claim(s,c,policy=EvidencePolicy('strict', required_action='run_job'))
+    assert out.status != 'verified'
+    s.close()
