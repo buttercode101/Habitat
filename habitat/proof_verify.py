@@ -36,6 +36,9 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     if isinstance(expected, str):
         digest_input = dict(bundle)
         digest_input.pop("generated_at", None)
+        # The digest authenticates the bundle contents, excluding the digest
+        # field itself to avoid a circular hash.
+        digest_input.pop("content_sha256", None)
         actual = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
         if actual != expected:
             errors.append("content_sha256 mismatch")
