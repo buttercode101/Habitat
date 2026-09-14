@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Added a tamper-evident SHA-256 hash chain for trusted actions.
+- Claim verification now refuses to treat a corrupted or incomplete action ledger as trusted.
+- Added regression coverage for action-ledger tampering.
+- Documented the integrity boundary and clarified that the local ledger is evidence, not independently anchored remote attestation.
+
 ## 1.0.0
 
 - Added agent registry and least-privilege permissions.
