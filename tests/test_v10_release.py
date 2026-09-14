@@ -53,3 +53,11 @@ def test_http_dashboard_is_live_surface(tmp_path):
     try:
         r=urlopen(f'http://127.0.0.1:{server.server_port}/dashboard');body=r.read().decode();assert 'Demo' in body or 'H' in body;assert 'Jobs &amp; health' in body or 'Jobs & health' in body
     finally:server.shutdown();server.server_close()
+
+def test_tampered_action_ledger_cannot_verify_claim(tmp_path):
+    from habitat.claims import Claim
+    from habitat.verify import verify_claim
+    s=make(tmp_path); s.save_action(Action('a','h',utcnow(),'agent','run_job','ok','j',{},'r1'))
+    s.conn.execute("UPDATE action SET status='failed' WHERE id='a'"); s.conn.commit()
+    c=Claim.new('h','done','j','run_job','ok'); c.run_id='r1'; s.save_claim(c)
+    out=verify_claim(s,c); assert out.status=='inconclusive'; assert out.evidence['reason']=='action_ledger_integrity_check_failed'; s.close()
