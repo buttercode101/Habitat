@@ -42,7 +42,7 @@ def ingest_event(store,body,signature,secret,require_signature=True,agent_id=Non
     if typ=="agent.heartbeat": result["agent_id"]=declared_agent; result["heartbeat"]=True; return result
     if typ in {"job.completed","job.failed"}:
         job=next(j for j in store.jobs() if j.id==p["job_id"]); status="ok" if typ=="job.completed" else "failed"; now=utcnow()
-        store.save_action(Action(str(uuid.uuid4()),hid,now,"agent","run_job",status,job.id,{"source":"event","event_id":eid,"payload":p},correlation)); job.last_run_at=now; job.last_status=status; job.last_error=p.get("error") if status=="failed" else None; job.failure_streak=job.failure_streak+1 if status=="failed" else 0; store.save_job(job); result.update(job_status=status,run_id=correlation)
+        store.save_action(Action(str(uuid.uuid4()),hid,now,declared_agent or "agent","run_job",status,job.id,{"source":"event","event_id":eid,"payload":p},correlation)); job.last_run_at=now; job.last_status=status; job.last_error=p.get("error") if status=="failed" else None; job.failure_streak=job.failure_streak+1 if status=="failed" else 0; store.save_job(job); result.update(job_status=status,run_id=correlation)
     elif typ=="job.started":
         job=next(j for j in store.jobs() if j.id==p["job_id"]); job.last_status="running"; job.last_run_at=utcnow(); store.save_job(job); result.update(job_status="running",run_id=correlation)
     else:
