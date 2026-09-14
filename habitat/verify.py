@@ -41,11 +41,11 @@ def verify_claim(
     if claim.habitat_id != store.habitat().id:
         claim.status = "rejected"
         claim.evidence = {"source": "habitat", "reason": "habitat_mismatch"}
-        return _finish(claim, store)
+        return _finish(claim, store, policy)
     if not store.verify_action_integrity():
         claim.status = "inconclusive"
         claim.evidence = {"source": "habitat_trusted_ledger", "reason": "action_ledger_integrity_check_failed"}
-        return _finish(claim, store)
+        return _finish(claim, store, policy)
 
     actions = store.actions(5000)
     matches = [a for a in actions if (claim.job_id is None or a.job_id == claim.job_id) and (claim.action is None or a.action == claim.action) and (claim.run_id is None or a.run_id == claim.run_id)]
@@ -64,7 +64,7 @@ def verify_claim(
         if not evidence_adapter:
             claim.status = "rejected" if len(actions) == 0 else "inconclusive"
             claim.evidence = {"source": "habitat_trusted_ledger", "reason": "no_matching_trusted_action" if not actions else "run_id_required_for_ambiguous_trusted_verification"}
-            return _finish(claim, store)
+            return _finish(claim, store, policy)
 
     trusted = next((a for a in matches if a.status == claim.expected_status), None)
     if trusted:
