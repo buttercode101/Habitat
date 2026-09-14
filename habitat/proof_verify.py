@@ -2,8 +2,8 @@
 
 This verifier intentionally makes a narrow claim: it proves that the proof
 bundle has not changed since its content digest was generated and that its
-internal claim/ledger shape is coherent. It does not authenticate who created
-the bundle or prove facts outside the evidence contained in the bundle.
+internal claim/ledger relationships are coherent. It does not authenticate
+who created the bundle or prove facts outside the evidence contained in it.
 """
 from __future__ import annotations
 
@@ -17,6 +17,48 @@ def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], errors: list[str]) -> None:
+    actions = ledger.get("actions")
+    if not isinstance(actions, list):
+        errors.append("ledger.actions must be an array")
+        return
+
+    claim_habitat = claim.get("habitat_id")
+    claim_job = claim.get("job_id")
+    claim_run = claim.get("run_id")
+    claim_action = claim.get("action")
+    expected_status = claim.get("expected_status")
+
+    for index, action in enumerate(actions):
+        if not isinstance(action, dict):
+            errors.append(f"ledger.actions[{index}] must be an object")
+            continue
+        if claim_habitat is not None and action.get("habitat_id") != claim_habitat:
+            errors.append(f"ledger.actions[{index}] habitat_id does not match claim")
+        if claim_job is not None and action.get("job_id") != claim_job:
+            errors.append(f"ledger.actions[{index}] job_id does not match claim")
+        if claim_run is not None and action.get("run_id") != claim_run:
+            errors.append(f"ledger.actions[{index}] run_id does not match claim")
+
+    evidence = claim.get("evidence")
+    if not isinstance(evidence, dict):
+        return
+    evidence_action_id = evidence.get("action_id")
+    if evidence_action_id is None:
+        return
+
+    matched = next((a for a in actions if isinstance(a, dict) and a.get("id") == evidence_action_id), None)
+    if matched is None:
+        errors.append("claim evidence action_id is absent from ledger.actions")
+        return
+    if claim_action is not None and matched.get("action") != claim_action:
+        errors.append("claim evidence action does not match claim.action")
+    if expected_status is not None and matched.get("status") != expected_status:
+        errors.append("claim evidence action status does not match claim.expected_status")
+    if claim_run is not None and matched.get("run_id") != claim_run:
+        errors.append("claim evidence action run_id does not match claim.run_id")
+
+
 def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     """Verify a decoded Habitat proof bundle without importing Habitat."""
     errors: list[str] = []
@@ -24,6 +66,9 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     missing = sorted(required - set(bundle))
     if missing:
         errors.append("missing fields: " + ", ".join(missing))
+
+    if bundle.get("proof_version") != "1":
+        errors.append("unsupported proof_version")
 
     claim = bundle.get("claim")
     ledger = bundle.get("ledger")
@@ -48,6 +93,9 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     integrity = ledger.get("integrity") if isinstance(ledger, dict) else None
     if integrity not in {"intact", "failed"}:
         errors.append("ledger.integrity must be 'intact' or 'failed'")
+
+    if isinstance(claim, dict) and isinstance(ledger, dict):
+        _validate_relationships(claim, ledger, errors)
 
     verdict = claim.get("status") if isinstance(claim, dict) else None
     if verdict == "verified" and integrity != "intact":
