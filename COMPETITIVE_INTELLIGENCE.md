@@ -8,6 +8,8 @@ The category around agent observability has become substantially stronger. OpenT
 
 The market has also moved directly toward the problem Habitat addresses: agent identity, authorization, runtime policy, tamper-evident audit and portable evidence. Examples include NIST's 2026 agent identity work, emerging Agent Identity Protocol work, runtime governance products, and open-source/research projects focused on signed or replayable agent evidence.
 
+Recent September 2026 developments reinforce that direction: payment networks are working on common AI-agent identification and verification frameworks, India is developing an agent registry for agentic payments, and regulators and major model providers are increasing pressure for auditable human control of agentic systems. citeturn0news26turn0news28turn0news27
+
 ## Competitive threat map
 
 | Category | Examples | Strong at | Habitat response |
@@ -17,6 +19,8 @@ The market has also moved directly toward the problem Habitat addresses: agent i
 | Provenance / evidence | Aevum, Hashirai, AgentProvenance, NovaFabric, related research | Tamper evidence, provenance, signed/replayable records | Treat these as direct competitors; interoperability matters |
 | Agent identity / standards | NIST initiative, AIP draft, MCP/A2A ecosystem | Identity, authorization, interoperability | Align rather than invent another identity ecosystem |
 | General provenance | W3C PROV, in-toto attestations | Mature provenance/attestation concepts | Map to established concepts where useful; avoid proprietary vocabulary lock-in |
+
+Aevum is a particularly important direct benchmark because it now combines a signed/hash-chained ledger, portable signed receipts, trusted timestamps and independent verification. Habitat should not pretend those primitives are unique. citeturn0search0
 
 ## The uncomfortable conclusion
 
@@ -50,20 +54,20 @@ The advantage must come from the combination:
 - a runtime firewall pretending to be an evidence system;
 - a compliance product that claims a proof establishes real-world truth.
 
-## Highest-priority technical pressure
+## Completed technical pressure response
 
-Signed portable receipts are becoming a competitive baseline. Habitat already has optional Ed25519 signing, but its current zero-install verifier intentionally does not establish signature authenticity. That boundary is honest, but it means signed proof exchange is not yet a first-class interoperability story.
-
-Before adding broad features, the next protocol audit should determine whether Habitat should define a small, versioned **verification profile** that distinguishes:
+Signed portable receipts are becoming a competitive baseline. Habitat now has an explicit assurance model that separates:
 
 - structural validity;
 - bundle/content integrity;
 - internal claim/evidence consistency;
-- cryptographic signature validity;
+- signature presence versus cryptographic verification;
 - publisher/key trust;
 - external-world truth.
 
-These levels must never collapse into one `valid=true` result.
+The zero-install verifier reports a present signature as `present-unverified` rather than falsely claiming cryptographic authenticity. Optional Ed25519 verification plus the explicit `TrustRegistry` remains the authenticated/trusted path. Signed proof export is available through the CLI using an environment-provided private key. The proof content digest excludes the optional signature, while the signature covers the complete unsigned proof bundle.
+
+This is intentionally a small protocol boundary, not a new identity or compliance system.
 
 ## Decision rule
 
