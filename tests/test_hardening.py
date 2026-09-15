@@ -1,9 +1,13 @@
+import hashlib
+import hmac
+import json
 import tempfile
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-from habitat.schema import Action
+from habitat.events import ingest_event
+from habitat.schema import Action, Habitat, Job
 from habitat.server import _is_loopback_host, serve
 from habitat.store import Store
 
@@ -61,5 +65,31 @@ def test_exact_claim_and_run_queries_are_not_recent_history_windows():
             store.save_action(Action("old", "h", datetime(2026, 1, 1, tzinfo=timezone.utc), "agent", "deploy", "ok", "j", {}, "run-old"))
             assert [a.id for a in store.actions_for_run("run-old")] == ["old"]
             assert [a.id for a in store.matching_actions("h", "j", "deploy", "run-old")] == ["old"]
+        finally:
+            store.close()
+
+
+def test_event_ingestion_rolls_back_if_derived_action_fails(monkeypatch):
+    with tempfile.TemporaryDirectory() as d:
+        store = Store(Path(d) / "state.db")
+        try:
+            store.save_habitat(Habitat("h", "H"))
+            store.save_job(Job("j", "h", "J"))
+            payload = {"id": "e1", "type": "job.completed", "habitat_id": "h", "job_id": "j", "run_id": "r1"}
+            body = json.dumps(payload, separators=(",", ":")).encode()
+            secret = "secret"
+            signature = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+
+            def fail(_action):
+                raise RuntimeError("simulated write failure")
+
+            monkeypatch.setattr(store, "save_action", fail)
+            try:
+                ingest_event(store, body, signature, secret)
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError("expected derived-action failure")
+            assert store.events() == []
         finally:
             store.close()
