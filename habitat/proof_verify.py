@@ -1,14 +1,15 @@
-"""Dependency-free verification of exported Habitat proof bundles.
+"""Dependency-light verification of exported Habitat proof bundles.
 
-This verifier intentionally makes a narrow claim: it proves that the proof
-bundle has not changed since its content digest was generated and that its
-internal claim/ledger relationships are coherent. It does not authenticate
-who created the bundle or prove facts outside the evidence contained in it.
+The verifier separates structural validity, content integrity, internal
+consistency, cryptographic signature validity, publisher trust, and external
+truth. A valid bundle is never treated as proof that the outside world is true.
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -17,70 +18,127 @@ def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def _date_time(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return True
+    except ValueError:
+        return False
+
+
 def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
-    required = {"proof_version", "claim", "ledger", "content_sha256"}
+    allowed = {"proof_version", "generated_at", "claim", "ledger", "content_sha256", "signature"}
+    required = {"proof_version", "generated_at", "claim", "ledger", "content_sha256"}
+    unknown = sorted(set(bundle) - allowed)
     missing = sorted(required - set(bundle))
+    if unknown:
+        errors.append("unknown fields: " + ", ".join(unknown))
     if missing:
         errors.append("missing fields: " + ", ".join(missing))
-
     if bundle.get("proof_version") != "1":
         errors.append("unsupported proof_version")
+    if not _date_time(bundle.get("generated_at")):
+        errors.append("generated_at must be an ISO-8601 date-time")
+    if not isinstance(bundle.get("content_sha256"), str) or len(bundle.get("content_sha256", "")) != 64 or any(c not in "0123456789abcdef" for c in bundle.get("content_sha256", "")):
+        errors.append("content_sha256 must be 64 lowercase hexadecimal characters")
 
     claim = bundle.get("claim")
     ledger = bundle.get("ledger")
+    claim_required = {"id", "habitat_id", "job_id", "claim", "action", "expected_status", "created_at", "verified_at", "status", "evidence", "run_id"}
+    claim_allowed = claim_required
     if not isinstance(claim, dict):
         errors.append("claim must be an object")
+    else:
+        if set(claim) - claim_allowed:
+            errors.append("claim contains unknown fields")
+        if claim_required - set(claim):
+            errors.append("claim is missing required fields")
+        for field in ("id", "habitat_id", "claim", "expected_status", "status"):
+            if not isinstance(claim.get(field), str):
+                errors.append(f"claim.{field} must be a string")
+        if not isinstance(claim.get("evidence"), dict):
+            errors.append("claim.evidence must be an object")
+        for field in ("job_id", "action", "run_id"):
+            if claim.get(field) is not None and not isinstance(claim.get(field), str):
+                errors.append(f"claim.{field} must be a string or null")
+        if not _date_time(claim.get("created_at")):
+            errors.append("claim.created_at must be an ISO-8601 date-time")
+        if claim.get("verified_at") is not None and not _date_time(claim.get("verified_at")):
+            errors.append("claim.verified_at must be an ISO-8601 date-time or null")
+
     if not isinstance(ledger, dict):
         errors.append("ledger must be an object")
-    if not isinstance(bundle.get("content_sha256"), str):
-        errors.append("content_sha256 must be a string")
-
-    if isinstance(ledger, dict):
+    else:
+        if set(ledger) != {"integrity", "actions"}:
+            errors.append("ledger must contain exactly integrity and actions")
         if ledger.get("integrity") not in {"intact", "failed"}:
             errors.append("ledger.integrity must be 'intact' or 'failed'")
-        if not isinstance(ledger.get("actions"), list):
+        actions = ledger.get("actions")
+        if not isinstance(actions, list):
             errors.append("ledger.actions must be an array")
+        else:
+            required_action = {"id", "habitat_id", "job_id", "timestamp", "actor", "action", "status", "details", "run_id"}
+            for index, action in enumerate(actions):
+                if not isinstance(action, dict):
+                    errors.append(f"ledger.actions[{index}] must be an object")
+                    continue
+                if set(action) != required_action:
+                    errors.append(f"ledger.actions[{index}] has invalid fields")
+                for field in ("id", "habitat_id", "actor", "action", "status"):
+                    if not isinstance(action.get(field), str):
+                        errors.append(f"ledger.actions[{index}].{field} must be a string")
+                if not isinstance(action.get("details"), dict):
+                    errors.append(f"ledger.actions[{index}].details must be an object")
+                for field in ("job_id", "run_id"):
+                    if action.get(field) is not None and not isinstance(action.get(field), str):
+                        errors.append(f"ledger.actions[{index}].{field} must be a string or null")
+                if not _date_time(action.get("timestamp")):
+                    errors.append(f"ledger.actions[{index}].timestamp must be an ISO-8601 date-time")
 
-    if isinstance(bundle.get("signature"), dict):
+    if "signature" in bundle:
         signature = bundle["signature"]
-        if signature.get("algorithm") != "Ed25519":
-            errors.append("signature.algorithm must be 'Ed25519'")
-        for field in ("key_id", "agent_id", "public_key", "signature"):
-            if field not in signature:
-                errors.append(f"signature.{field} is required")
-    elif "signature" in bundle:
-        errors.append("signature must be an object")
+        if not isinstance(signature, dict):
+            errors.append("signature must be an object")
+        else:
+            required_sig = {"algorithm", "key_id", "agent_id", "public_key", "signature"}
+            if set(signature) != required_sig:
+                errors.append("signature has invalid fields")
+            if signature.get("algorithm") != "Ed25519":
+                errors.append("signature.algorithm must be 'Ed25519'")
+            for field in ("key_id", "agent_id"):
+                if signature.get(field) is not None and not isinstance(signature.get(field), str):
+                    errors.append(f"signature.{field} must be a string or null")
+            for field in ("public_key", "signature"):
+                if not isinstance(signature.get(field), str) or not signature.get(field):
+                    errors.append(f"signature.{field} must be a non-empty string")
 
 
 def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], errors: list[str]) -> None:
     actions = ledger.get("actions")
     if not isinstance(actions, list):
         return
-
     claim_habitat = claim.get("habitat_id")
     claim_job = claim.get("job_id")
     claim_run = claim.get("run_id")
     claim_action = claim.get("action")
     expected_status = claim.get("expected_status")
-
     for index, action in enumerate(actions):
         if not isinstance(action, dict):
-            errors.append(f"ledger.actions[{index}] must be an object")
             continue
-        if claim_habitat is not None and action.get("habitat_id") != claim_habitat:
+        if action.get("habitat_id") != claim_habitat:
             errors.append(f"ledger.actions[{index}] habitat_id does not match claim")
         if claim_job is not None and action.get("job_id") != claim_job:
             errors.append(f"ledger.actions[{index}] job_id does not match claim")
         if claim_run is not None and action.get("run_id") != claim_run:
             errors.append(f"ledger.actions[{index}] run_id does not match claim")
-
     evidence = claim.get("evidence")
     if not isinstance(evidence, dict):
         return
     evidence_action_id = evidence.get("action_id")
     if evidence_action_id is None:
         return
-
     matched = next((a for a in actions if isinstance(a, dict) and a.get("id") == evidence_action_id), None)
     if matched is None:
         errors.append("claim evidence action_id is absent from ledger.actions")
@@ -93,6 +151,26 @@ def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], error
         errors.append("claim evidence action run_id does not match claim.run_id")
 
 
+def _verify_signature(bundle: dict[str, Any]) -> str:
+    signature = bundle.get("signature")
+    if signature is None:
+        return "absent"
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        public_raw = base64.b64decode(signature["public_key"], validate=True)
+        sig_raw = base64.b64decode(signature["signature"], validate=True)
+        if len(public_raw) != 32 or len(sig_raw) != 64:
+            return "invalid"
+        unsigned = dict(bundle)
+        unsigned.pop("signature", None)
+        Ed25519PublicKey.from_public_bytes(public_raw).verify(sig_raw, _canonical(unsigned).encode("utf-8"))
+        return "verified"
+    except ImportError:
+        return "present-unverified"
+    except Exception:
+        return "invalid"
+
+
 def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     """Verify a decoded Habitat proof bundle and report assurance boundaries."""
     errors: list[str] = []
@@ -101,35 +179,31 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     errors.extend(structure_errors)
 
     expected = bundle.get("content_sha256")
+    actual = None
     if isinstance(expected, str):
         digest_input = dict(bundle)
         digest_input.pop("generated_at", None)
         digest_input.pop("content_sha256", None)
-        # Signatures authenticate this digest but are excluded from it, so
-        # adding/removing the optional signature does not rewrite proof content.
         digest_input.pop("signature", None)
         actual = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
         if actual != expected:
             errors.append("content_sha256 mismatch")
-    else:
-        actual = None
 
     claim = bundle.get("claim")
     ledger = bundle.get("ledger")
     relationship_errors_before = len(errors)
     if isinstance(claim, dict) and isinstance(ledger, dict):
         _validate_relationships(claim, ledger, errors)
-
     verdict = claim.get("status") if isinstance(claim, dict) else None
     integrity = ledger.get("integrity") if isinstance(ledger, dict) else None
     if verdict == "verified" and integrity != "intact":
         errors.append("verified claim cannot have failed ledger integrity")
 
+    signature_state = _verify_signature(bundle) if not any(e.startswith("signature") for e in structure_errors) else "invalid"
+    if signature_state == "invalid":
+        errors.append("signature verification failed")
     relationship_valid = len(errors) == relationship_errors_before
     content_valid = isinstance(actual, str) and actual == expected
-    signature = bundle.get("signature")
-    signature_state = "absent" if signature is None else "present-unverified"
-
     valid = not errors
     return {
         "valid": valid,
@@ -138,7 +212,7 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         "ledger_integrity": integrity,
         "errors": errors,
         "scope": "bundle-integrity-and-internal-consistency",
-        "authenticity": "not-established",
+        "authenticity": "cryptographic-signature" if signature_state == "verified" else "not-established",
         "assurance": {
             "structural_validity": not structure_errors,
             "content_integrity": content_valid,
@@ -152,4 +226,7 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
 
 def verify_file(path: str | Path) -> dict[str, Any]:
     with open(path, "r", encoding="utf-8") as handle:
-        return verify_proof(json.load(handle))
+        value = json.load(handle)
+    if not isinstance(value, dict):
+        return {"valid": False, "errors": ["proof bundle must be a JSON object"]}
+    return verify_proof(value)
