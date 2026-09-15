@@ -8,7 +8,7 @@ The category around agent observability has become substantially stronger. OpenT
 
 The market has also moved directly toward the problem Habitat addresses: agent identity, authorization, runtime policy, tamper-evident audit and portable evidence. Examples include NIST's 2026 agent identity work, emerging Agent Identity Protocol work, runtime governance products, and open-source/research projects focused on signed or replayable agent evidence.
 
-Recent September 2026 developments reinforce that direction: payment networks are working on common AI-agent identification and verification frameworks, India is developing an agent registry for agentic payments, and regulators and major model providers are increasing pressure for auditable human control of agentic systems. citeturn0news26turn0news28turn0news27
+Recent September 2026 developments reinforce that direction: payment networks are working on common AI-agent identification and verification frameworks, India is developing an agent registry for agentic payments, and regulators and major model providers are increasing pressure for auditable human control of agentic systems.
 
 ## Competitive threat map
 
@@ -20,7 +20,7 @@ Recent September 2026 developments reinforce that direction: payment networks ar
 | Agent identity / standards | NIST initiative, AIP draft, MCP/A2A ecosystem | Identity, authorization, interoperability | Align rather than invent another identity ecosystem |
 | General provenance | W3C PROV, in-toto attestations | Mature provenance/attestation concepts | Map to established concepts where useful; avoid proprietary vocabulary lock-in |
 
-Aevum is a particularly important direct benchmark because it now combines a signed/hash-chained ledger, portable signed receipts, trusted timestamps and independent verification. Habitat should not pretend those primitives are unique. citeturn0search0
+Aevum is a particularly important direct benchmark because it now combines a signed/hash-chained ledger, portable signed receipts, trusted timestamps and independent verification. Habitat should not pretend those primitives are unique.
 
 ## The uncomfortable conclusion
 
