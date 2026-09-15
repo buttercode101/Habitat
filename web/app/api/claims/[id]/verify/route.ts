@@ -1,4 +1,4 @@
-import { verifyClaim } from "../../../../../../lib/habitat";
+import { verifyClaim } from "../../../../../lib/habitat";
 
 export const dynamic = "force-dynamic";
 
