@@ -38,13 +38,13 @@ def test_dashboard_renders_claim_evidence_and_proof_links_without_raw_html_injec
         created_at=datetime(2026, 1, 2, 3, 4),
         verified_at=datetime(2026, 1, 2, 3, 5),
         status="verified",
-        evidence=[{"source": "ledger", "status": "success", "action_id": "action-1"}],
+        evidence={"source": "ledger", "status": "success", "action_id": "action-1"},
         run_id="run-1",
     )
     html = render_dashboard(habitat, [], [], [], claims=[claim])
     assert "Claims &amp; proof" in html
     assert "Agent completed &lt;task&gt;" in html
-    assert "ledger · success" in html
+    assert "source: ledger · status: success · action_id: action-1" in html
     assert "/v1/claims/claim&lt;&amp;/verify" in html
     assert "/v1/claims/claim&lt;&amp;/proof" in html
     assert "claim<&" not in html
