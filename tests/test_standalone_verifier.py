@@ -13,7 +13,7 @@ STANDALONE = ROOT / "tools" / "verify_proof.py"
 def _bundle():
     bundle = {
         "proof_version": "1", "generated_at": "2026-01-01T00:00:00+00:00",
-        "claim": {"id": "c1", "habitat_id": "h1", "job_id": "j1", "claim": "deploy happened", "action": "deploy", "expected_status": "ok", "created_at": "2026-01-01T00:00:00+00:00", "verified_at": "2026-01-01T00:00:01+00:00", "status": "verified", "run_id": "r1", "evidence": {"action_id": "a1"}},
+        "claim": {"id": "c1", "habitat_id": "h1", "job_id": "j1", "claim": "deploy happened", "action": "deploy", "expected_status": "ok", "created_at": "2026-01-01T00:00:00+00:00", "verified_at": "2026-01-01T00:00:01+00:00", "status": "verified", "run_id": "r1", "evidence": {"source": "habitat_trusted_ledger", "status": "ok", "action_id": "a1"}},
         "ledger": {"integrity": "intact", "actions": [{"id": "a1", "habitat_id": "h1", "job_id": "j1", "timestamp": "2026-01-01T00:00:00+00:00", "actor": "agent", "action": "deploy", "status": "ok", "details": {}, "run_id": "r1"}]},
     }
     digest_input = dict(bundle); digest_input.pop("generated_at")
