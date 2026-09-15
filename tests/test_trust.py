@@ -38,3 +38,11 @@ def test_registry_rejects_key_bound_to_different_signed_agent():
     bundle = sign_proof({"proof_version": "1"}, private, "agent-key", agent_id="agent-b")
     registry = TrustRegistry([TrustedKey("agent-key", public, agent_id="agent-a")])
     assert not registry.verify(bundle)
+
+
+def test_registry_does_not_trust_unbound_embedded_agent_attribution():
+    private, public = generate_keypair()
+    bundle = sign_proof({"proof_version": "1"}, private, "agent-key", agent_id="agent-a")
+    registry = TrustRegistry([TrustedKey("agent-key", public)])
+    assert not registry.verify(bundle)
+    assert registry.verify(sign_proof({"proof_version": "1"}, private, "agent-key"))
