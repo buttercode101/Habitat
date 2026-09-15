@@ -1,11 +1,13 @@
 """Deterministic claim verification with exact run correlation and policy gates."""
 from __future__ import annotations
+
 from typing import Any
-from .claims import Claim
-from .store import Store
-from .schema import utcnow
+
 from .adapters import EvidenceAdapter
+from .claims import Claim
 from .policy import EvidencePolicy, apply_policy
+from .schema import utcnow
+from .store import Store
 
 
 def _matches_expected(data: Any, expected: dict[str, Any] | None) -> bool:
@@ -47,8 +49,9 @@ def verify_claim(
         claim.evidence = {"source": "habitat_trusted_ledger", "reason": "action_ledger_integrity_check_failed"}
         return _finish(claim, store, policy)
 
-    actions = store.actions(5000)
-    matches = [a for a in actions if (claim.job_id is None or a.job_id == claim.job_id) and (claim.action is None or a.action == claim.action) and (claim.run_id is None or a.run_id == claim.run_id)]
+    # Never rely on a fixed recent-history window: a valid claim may refer to an
+    # old action. Query SQLite using the exact correlation dimensions instead.
+    matches = store.matching_actions(claim.habitat_id, claim.job_id, claim.action, claim.run_id)
 
     if claim.run_id is None and (claim.job_id or claim.action):
         if len(matches) == 1:
@@ -60,10 +63,9 @@ def verify_claim(
                 claim.status = "rejected"
                 claim.evidence = {"source": "habitat_trusted_ledger", "reason": "matching_action_has_different_status", "legacy_match": True}
             return _finish(claim, store, policy)
-        matches = []
         if not evidence_adapter:
-            claim.status = "rejected" if len(actions) == 0 else "inconclusive"
-            claim.evidence = {"source": "habitat_trusted_ledger", "reason": "no_matching_trusted_action" if not actions else "run_id_required_for_ambiguous_trusted_verification"}
+            claim.status = "rejected" if len(matches) == 0 else "inconclusive"
+            claim.evidence = {"source": "habitat_trusted_ledger", "reason": "no_matching_trusted_action" if not matches else "run_id_required_for_ambiguous_trusted_verification"}
             return _finish(claim, store, policy)
 
     trusted = next((a for a in matches if a.status == claim.expected_status), None)
