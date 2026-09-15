@@ -45,6 +45,7 @@ def test_dashboard_renders_claim_evidence_and_proof_links_without_raw_html_injec
     assert "Claims &amp; proof" in html
     assert "Agent completed &lt;task&gt;" in html
     assert "source: ledger · status: success · action_id: action-1" in html
+    assert "/dashboard/claims/claim&lt;&amp;" in html
     assert "/v1/claims/claim&lt;&amp;/verify" in html
     assert "/v1/claims/claim&lt;&amp;/proof" in html
     assert "claim<&" not in html
