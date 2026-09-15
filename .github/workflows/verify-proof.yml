@@ -6,11 +6,19 @@ on:
       proof:
         description: Path to a Habitat proof JSON bundle
         required: true
-        default: proof.json
+        default: examples/fixtures/sample_proof.json
   push:
     paths:
       - 'proof.json'
       - 'proofs/**/*.json'
+      - 'examples/fixtures/**/*.json'
+      - 'tools/verify_proof.py'
+      - '.github/workflows/verify-proof.yml'
+  pull_request:
+    paths:
+      - 'proof.json'
+      - 'proofs/**/*.json'
+      - 'examples/fixtures/**/*.json'
       - 'tools/verify_proof.py'
       - '.github/workflows/verify-proof.yml'
 
@@ -39,7 +47,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          proof="${PROOF_INPUT:-proof.json}"
+          proof="${PROOF_INPUT:-examples/fixtures/sample_proof.json}"
           if [[ -z "$proof" || "$proof" == /* || "$proof" == *$'\n'* || "$proof" == *$'\r'* ]]; then
             echo "Invalid proof path" >&2
             exit 1
@@ -49,8 +57,8 @@ jobs:
             exit 1
           fi
           if [[ ! -f "$proof" ]]; then
-            if [[ "$EVENT_NAME" == "push" ]]; then
-              echo "No proof bundle present; nothing to verify on this push."
+            if [[ "$EVENT_NAME" == "push" || "$EVENT_NAME" == "pull_request" ]]; then
+              echo "No proof bundle present at $proof; nothing to verify on this event."
               printf 'skip=true\n' >> "$GITHUB_OUTPUT"
               exit 0
             fi
@@ -60,9 +68,39 @@ jobs:
           printf 'path=%s\n' "$proof" >> "$GITHUB_OUTPUT"
           printf 'skip=false\n' >> "$GITHUB_OUTPUT"
 
-      - name: Verify proof
+      - name: Verify proof (standalone, zero Habitat install)
         if: steps.proof.outputs.skip != 'true'
         shell: bash
         env:
           PROOF_PATH: ${{ steps.proof.outputs.path }}
         run: python tools/verify_proof.py "$PROOF_PATH"
+
+  generate-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install Habitat
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+
+      - name: Generate sample proof fixture
+        run: python examples/generate_sample_proof.py
+
+      - name: Verify with standalone verifier
+        run: python tools/verify_proof.py examples/fixtures/sample_proof.json
+
+      - name: Upload sample proof artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sample-proof
+          path: examples/fixtures/sample_proof.json
+          if-no-files-found: error
