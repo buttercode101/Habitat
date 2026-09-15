@@ -89,7 +89,12 @@ def cmd_doctor(a):
 def cmd_backup(a):print(f'Backup written to {backup(a.db,a.output)}');return 0
 def cmd_restore(a):print(f'Restored database to {restore(a.input,a.db)}');return 0
 def cmd_generate(a):
-    s=get_store(a);p=write_dashboard(render_dashboard(s.habitat(),s.jobs(),s.signals(),s.actions(),s.habitat().name),a.output);s.close();print(f'Wrote {p.resolve()}');return 0
+    s=get_store(a)
+    try:
+        h=s.habitat()
+        p=write_dashboard(render_dashboard(h,s.jobs(),s.signals(),s.actions(),h.name,s.claims()),a.output)
+        print(f'Wrote {p.resolve()}');return 0
+    finally:s.close()
 def main(argv=None):
     p=argparse.ArgumentParser(prog='habitat',description='Local-first supervision and accountability runtime for autonomous agents.');p.add_argument('--db',default=str(DEFAULT_DB));sub=p.add_subparsers(dest='command',required=True)
     x=sub.add_parser('init');x.add_argument('--config',required=True);x.set_defaults(func=cmd_init)
@@ -101,7 +106,7 @@ def main(argv=None):
     x=sub.add_parser('verify');x.add_argument('--id');x.add_argument('--query');x.add_argument('--evidence-file');x.add_argument('--evidence-url');x.add_argument('--github-issue');x.add_argument('--token-env',default='GITHUB_TOKEN');x.add_argument('--evidence-expected');x.set_defaults(func=cmd_verify)
     x=sub.add_parser('proof');x.add_argument('id');x.add_argument('--reverify',action='store_true');x.add_argument('-o','--output',help='write only the portable proof bundle to this JSON file');x.add_argument('--signing-key-env',help='environment variable containing a base64 Ed25519 private key');x.add_argument('--key-id',help='trusted-key registry identifier to embed in the signature');x.add_argument('--agent-id',help='publisher agent identifier to bind into the signature');x.set_defaults(func=cmd_proof)
     x=sub.add_parser('event');x.add_argument('--file');x.add_argument('--json',default='');x.add_argument('--signature');x.add_argument('--secret-env',default='HABITAT_WEBHOOK_SECRET');x.add_argument('--agent-id');x.add_argument('--agent-secret-env',default='HABITAT_AGENT_SECRET');x.add_argument('--no-signature',action='store_true');x.set_defaults(func=cmd_event)
-    x=sub.add_parser('agents');x.set_defaults(func=cmd_agents)
+    sub.add_parser('agents').set_defaults(func=cmd_agents)
     x=sub.add_parser('agent-add');x.add_argument('id');x.add_argument('name');x.add_argument('--permission',action='append',default=['submit_events']);x.add_argument('--secret-env',default='HABITAT_AGENT_SECRET');x.set_defaults(func=cmd_agent_add)
     x=sub.add_parser('doctor');x.add_argument('--config');x.set_defaults(func=cmd_doctor)
     x=sub.add_parser('backup');x.add_argument('output');x.set_defaults(func=cmd_backup)
