@@ -92,8 +92,9 @@ def render_dashboard(habitat: Habitat, jobs: list[Job], signals: list[Signal], a
         f'<div>Evidence<strong>{_claim_evidence(c)}</strong></div>'
         f'<div>Run<strong>{escape(c.run_id or "—")}</strong></div>'
         f'<div>Job<strong>{escape(c.job_id or "—")}</strong></div></div>'
-        f'<div class="claim-actions"><a class="button secondary mini" href="/v1/claims/{escape(c.id)}/verify" target="_blank" rel="noreferrer">Verify now</a>'
-        f'<a class="button secondary mini" href="/v1/claims/{escape(c.id)}/proof" target="_blank" rel="noreferrer">Inspect proof</a></div></article>'
+        f'<div class="claim-actions"><a class="button secondary mini" href="/dashboard/claims/{escape(c.id)}">Inspect claim</a>'
+        f'<a class="button secondary mini" href="/v1/claims/{escape(c.id)}/verify" target="_blank" rel="noreferrer">Verify now</a>'
+        f'<a class="button secondary mini" href="/v1/claims/{escape(c.id)}/proof" target="_blank" rel="noreferrer">Proof JSON</a></div></article>'
         for c in claims[:20]
     ) or '<div class="ok">No claims recorded yet.</div>'
     panel_class = "attention" if unresolved else "calm"
