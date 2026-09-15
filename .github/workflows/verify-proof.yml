@@ -36,6 +36,14 @@ jobs:
         run: |
           set -euo pipefail
           proof="${PROOF_INPUT:-proof.json}"
+          if [[ -z "$proof" || "$proof" == /* || "$proof" == *$'\n'* || "$proof" == *$'\r'* || "$proof" == *$'\0'* ]]; then
+            echo "Invalid proof path" >&2
+            exit 1
+          fi
+          if [[ "$proof" != *.json || "$proof" == *..* ]]; then
+            echo "Proof path must be a relative .json path without '..'" >&2
+            exit 1
+          fi
           if [[ ! -f "$proof" ]]; then
             echo "Proof file not found: $proof" >&2
             exit 1
@@ -43,4 +51,7 @@ jobs:
           printf 'path=%s\n' "$proof" >> "$GITHUB_OUTPUT"
 
       - name: Verify proof
-        run: python tools/verify_proof.py "${{ steps.proof.outputs.path }}"
+        shell: bash
+        env:
+          PROOF_PATH: ${{ steps.proof.outputs.path }}
+        run: python tools/verify_proof.py "$PROOF_PATH"
