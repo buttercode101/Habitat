@@ -9,6 +9,7 @@ import uuid
 from .claims import Claim
 from .schema import Action, utcnow
 from .store import Store
+from .verify import verify_claim
 
 MAX_EVENT_BYTES = 256 * 1024
 ALLOWED_TYPES = {"agent.heartbeat", "job.started", "job.completed", "job.failed", "claim.submitted"}
