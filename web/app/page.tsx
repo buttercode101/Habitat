@@ -8,12 +8,21 @@ export default function Home() {
     <main className="marketing-shell">
       <header className="marketing-nav shell-width">
         <Link className="brand" href="/">Habitat</Link>
-        <nav aria-label="Primary navigation">
+        <nav className="desktop-nav" aria-label="Primary navigation">
           <a href="#how-it-works">How it works</a>
           <a href="#why">Why Habitat</a>
           <Link href="/dashboard">Live dashboard</Link>
           <a className="nav-cta" href={GITHUB_URL}>GitHub ↗</a>
         </nav>
+        <details className="mobile-nav">
+          <summary aria-label="Open navigation"><span>Menu</span><i aria-hidden="true">↗</i></summary>
+          <div className="mobile-nav-panel">
+            <a href="#how-it-works">How it works</a>
+            <a href="#why">Why Habitat</a>
+            <Link href="/dashboard">Live dashboard</Link>
+            <a href={GITHUB_URL}>GitHub ↗</a>
+          </div>
+        </details>
       </header>
 
       <section className="marketing-hero shell-width">
