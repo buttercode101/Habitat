@@ -89,15 +89,14 @@ def test_deleted_action_breaks_chain(tmp_path):
     store.close()
 
 
-def test_orphaned_integrity_row_is_detected(tmp_path):
+def test_missing_integrity_row_is_detected(tmp_path):
     store = make_store(tmp_path)
     store.save_action(_action("a1"))
     assert store.verify_action_integrity() is True
 
-    # Insert a fake integrity row that has no matching action
+    # Remove the integrity record for an existing action. The chain must fail.
     store.conn.execute(
-        "INSERT INTO action_integrity(action_id, prev_hash, hash) VALUES (?, ?, ?)",
-        ("ghost", None, "abcdef"),
+        "DELETE FROM action_integrity WHERE action_id = 'a1'"
     )
     store.conn.commit()
     assert store.verify_action_integrity() is False
