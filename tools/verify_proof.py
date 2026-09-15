@@ -172,18 +172,30 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
                 if claim.get("run_id") is not None and action.get("run_id") != claim.get("run_id"):
                     errors.append(f"ledger.actions[{index}] run_id does not match claim")
             evidence = claim.get("evidence")
-            if isinstance(evidence, dict) and evidence.get("action_id") is not None:
-                action_id = evidence["action_id"]
-                matched = next((a for a in actions if isinstance(a, dict) and a.get("id") == action_id), None)
-                if matched is None:
-                    errors.append("claim evidence action_id is absent from ledger.actions")
-                else:
-                    if claim.get("action") is not None and matched.get("action") != claim["action"]:
-                        errors.append("claim evidence action does not match claim.action")
-                    if claim.get("expected_status") is not None and matched.get("status") != claim["expected_status"]:
-                        errors.append("claim evidence action status does not match claim.expected_status")
-                    if claim.get("run_id") is not None and matched.get("run_id") != claim["run_id"]:
-                        errors.append("claim evidence action run_id does not match claim.run_id")
+            if isinstance(evidence, dict):
+                if claim.get("status") == "verified":
+                    if not evidence:
+                        errors.append("verified claim must include evidence")
+                    else:
+                        source = evidence.get("source")
+                        if not isinstance(source, str) or not source:
+                            errors.append("verified claim evidence must identify a source")
+                        if evidence.get("status") != claim.get("expected_status"):
+                            errors.append("verified claim evidence status does not match claim.expected_status")
+                        if source == "habitat_trusted_ledger" and not evidence.get("action_id"):
+                            errors.append("trusted-ledger verification must identify evidence.action_id")
+                if evidence.get("action_id") is not None:
+                    action_id = evidence["action_id"]
+                    matched = next((a for a in actions if isinstance(a, dict) and a.get("id") == action_id), None)
+                    if matched is None:
+                        errors.append("claim evidence action_id is absent from ledger.actions")
+                    else:
+                        if claim.get("action") is not None and matched.get("action") != claim["action"]:
+                            errors.append("claim evidence action does not match claim.action")
+                        if claim.get("expected_status") is not None and matched.get("status") != claim["expected_status"]:
+                            errors.append("claim evidence action status does not match claim.expected_status")
+                        if claim.get("run_id") is not None and matched.get("run_id") != claim["run_id"]:
+                            errors.append("claim evidence action run_id does not match claim.run_id")
 
     verdict = claim.get("status") if isinstance(claim, dict) else None
     integrity = ledger.get("integrity") if isinstance(ledger, dict) else None
