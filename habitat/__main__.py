@@ -14,6 +14,7 @@ from .server import serve
 from .generate import render_dashboard,write_dashboard
 from .doctor import diagnose
 from .backup import backup,restore
+from .proof_sign import sign_proof
 DEFAULT_DB=Path('.habitat/habitat.db')
 def get_store(a):return Store(a.db)
 def cmd_init(a):
@@ -46,14 +47,26 @@ def cmd_proof(a):
     s=get_store(a)
     try:
         result=verify_and_prove(s,a.id) if a.reverify else proof_status(s,a.id)
+        proof=result['proof']
+        if a.signing_key_env:
+            private_key=os.getenv(a.signing_key_env)
+            if not private_key:
+                raise ValueError(f"Signing key environment variable is not set: {a.signing_key_env}")
+            proof=sign_proof(proof,private_key,a.key_id,a.agent_id)
+            result['proof']=proof
+            result['signed']=True
+        else:
+            result['signed']=False
         if a.output:
-            Path(a.output).write_text(json.dumps(result['proof'],default=str,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+            Path(a.output).write_text(json.dumps(proof,default=str,indent=2,sort_keys=True)+'\n',encoding='utf-8')
             print(f'Wrote proof to {a.output}')
         else:
             print(json.dumps(result,default=str,indent=2))
         return 0
     except KeyError:
         print(json.dumps({'error':'claim_not_found'}));return 1
+    except (RuntimeError,ValueError) as exc:
+        print(json.dumps({'error':str(exc)}));return 1
     finally:s.close()
 def cmd_event(a):
     s=get_store(a);body=Path(a.file).read_bytes() if a.file else a.json.encode();secret=a.secret or (os.getenv(a.secret_env) if a.secret_env else None);sig=a.signature or (signature_for(secret,body) if secret else None)
@@ -81,7 +94,7 @@ def main(argv=None):
     x=sub.add_parser('generate');x.add_argument('-o','--output',default='dashboard.html');x.set_defaults(func=cmd_generate)
     x=sub.add_parser('claim');x.add_argument('claim');x.add_argument('--job');x.add_argument('--action');x.add_argument('--expected-status',default='ok');x.add_argument('--run-id');x.set_defaults(func=cmd_claim)
     x=sub.add_parser('verify');x.add_argument('--id');x.add_argument('--query');x.add_argument('--evidence-file');x.add_argument('--evidence-url');x.add_argument('--github-issue');x.add_argument('--token-env',default='GITHUB_TOKEN');x.add_argument('--evidence-expected');x.set_defaults(func=cmd_verify)
-    x=sub.add_parser('proof');x.add_argument('id');x.add_argument('--reverify',action='store_true');x.add_argument('-o','--output',help='write only the portable proof bundle to this JSON file');x.set_defaults(func=cmd_proof)
+    x=sub.add_parser('proof');x.add_argument('id');x.add_argument('--reverify',action='store_true');x.add_argument('-o','--output',help='write only the portable proof bundle to this JSON file');x.add_argument('--signing-key-env',help='environment variable containing a base64 Ed25519 private key');x.add_argument('--key-id',help='trusted-key registry identifier to embed in the signature');x.add_argument('--agent-id',help='publisher agent identifier to bind into the signature');x.set_defaults(func=cmd_proof)
     x=sub.add_parser('event');x.add_argument('--file');x.add_argument('--json',default='');x.add_argument('--signature');x.add_argument('--secret');x.add_argument('--secret-env',default='HABITAT_WEBHOOK_SECRET');x.add_argument('--agent-id');x.add_argument('--agent-secret');x.add_argument('--no-signature',action='store_true');x.set_defaults(func=cmd_event)
     x=sub.add_parser('agents');x.set_defaults(func=cmd_agents)
     x=sub.add_parser('agent-add');x.add_argument('id');x.add_argument('name');x.add_argument('--permission',action='append',default=['submit_events']);x.add_argument('--secret');x.set_defaults(func=cmd_agent_add)
