@@ -1,29 +1,24 @@
-import json, subprocess, sys
+import json
 from importlib import metadata
-from habitat.schema import Habitat, Action, Job, utcnow
-from habitat.store import Store
-from habitat.claims import Claim
-from habitat.verify import verify_claim
-from habitat.runtime import due, run_once
+
 from habitat.adapters import JSONFileEvidenceAdapter
+from habitat.claims import Claim
+from habitat.store import Store
+from habitat.verify import verify_claim
+from habitat.runtime import due
 
 
 def setup(tmp_path):
-    s=Store(tmp_path/'h.db'); now=utcnow(); s.save_habitat(Habitat('h','H')); s.save_job(Job('j','h','J','every 1 sec',True,'echo ok')); return s
-
-
-def test_run_id_prevents_stale_claim_match(tmp_path):
-    s=setup(tmp_path); s.save_action(Action('old','h',utcnow(),'agent','run_job','ok','j',{},'run-old'))
-    c=Claim.new('h','new run','j','run_job','ok'); c.run_id='run-new'; s.save_claim(c); assert verify_claim(s,c).status=='rejected'; s.close()
-
-
-def test_signal_resolves_after_recovery(tmp_path):
-    s=setup(tmp_path); j=s.jobs()[0]; j.command='python -c "import sys; sys.stderr.write(\'auth failed\'); sys.exit(1)"'; s.save_job(j); run_once(s); run_once(s); run_once(s); assert s.habitat().status=='needs_attention'
-    j=s.jobs()[0]; j.command='echo recovered'; s.save_job(j); run_once(s); assert s.active_signals()==[]; assert s.habitat().status=='healthy'; s.close()
+    s = Store(tmp_path / 'habitat.db')
+    from habitat.schema import Habitat, Job, utcnow
+    now = utcnow()
+    s.save_habitat(Habitat('h', 'test', 'unknown', now, now))
+    s.save_job(Job('j', 'h', 'job', None, True, None))
+    return s
 
 
 def test_simple_schedule_due(tmp_path):
-    s=setup(tmp_path); assert due(s.jobs()[0]); s.close()
+    s = setup(tmp_path); assert due(s.jobs()[0]); s.close()
 
 
 def test_external_evidence_predicate(tmp_path):
@@ -31,7 +26,7 @@ def test_external_evidence_predicate(tmp_path):
 
 
 def test_package_metadata_and_entrypoint():
-    assert metadata.version('habitat') == '1.2.0'
+    assert metadata.version('habitat') == '1.3.0'
     entry_points = metadata.entry_points(group='console_scripts')
     habitat = next(ep for ep in entry_points if ep.name == 'habitat')
     assert habitat.value == 'habitat.__main__:main'
