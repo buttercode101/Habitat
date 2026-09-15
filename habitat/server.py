@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from .events import ingest_event, MAX_EVENT_BYTES
 from .store import Store
-from .generate import render_dashboard
+from .generate import render_dashboard, render_landing
 from .verify_api import proof_status, verify_and_prove
 
 MAX_HTTP_CONNECTIONS = 64
@@ -26,7 +26,6 @@ MAX_HTTP_CONNECTIONS = 64
 
 class _AuthRateLimiter:
     """Bound repeated remote authentication failures without affecting localhost."""
-
     def __init__(self, max_failures=5, window_seconds=60, max_keys=4096):
         self.max_failures = max_failures
         self.window_seconds = window_seconds
@@ -67,7 +66,6 @@ class _AuthRateLimiter:
 
 class HabitatHTTPServer(ThreadingHTTPServer):
     """Threaded HTTP server with a hard cap on active request threads."""
-
     allow_reuse_address = True
     daemon_threads = True
 
@@ -177,7 +175,19 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             path = urlparse(self.path).path
             s = Store(db_path)
             try:
-                if path in ("/", "/dashboard"):
+                if path == "/":
+                    html = render_landing(s.habitat().name)
+                    raw = html.encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(raw)))
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; connect-src 'self'")
+                    self.send_header("X-Content-Type-Options", "nosniff")
+                    self.send_header("Referrer-Policy", "no-referrer")
+                    self.end_headers()
+                    self.wfile.write(raw)
+                elif path == "/dashboard":
                     html = render_dashboard(s.habitat(), s.jobs(), s.signals(), s.actions(), s.habitat().name)
                     raw = html.encode("utf-8")
                     self.send_response(200)
