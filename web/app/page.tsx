@@ -30,13 +30,14 @@ export default function Home() {
         <div className="hero-proof" aria-label="Habitat proof flow">
           <div className="proof-window">
             <div className="window-bar"><span /><span /><span /><b>habitat proof</b></div>
-            <div className="proof-status"><span className="status-dot" /> VERIFIED <small>claim</small></div>
-            <div className="proof-claim">Deployment <strong>run-42</strong> completed the expected action.</div>
+            <div className="proof-status"><span className="status-dot" /> VERIFIED <small>portable proof</small></div>
+            <div className="proof-claim">Rosendaltown change <strong>45bc7aa7</strong> has a verified evidence trail.</div>
+            <div className="proof-live"><span className="live-dot" /><strong>VERIFIED</strong><span>Habitat ledger · exact run correlation</span></div>
             <div className="proof-lines">
               <div><span>Evidence</span><b>trusted ledger</b></div>
-              <div><span>Action</span><b>deploy-prod</b></div>
+              <div><span>Action</span><b>repository change</b></div>
               <div><span>Integrity</span><b>intact</b></div>
-              <div><span>Digest</span><b className="mono">23b25b…dd43</b></div>
+              <div><span>Digest</span><b className="mono">a21b7f2f…18fc088</b></div>
             </div>
             <div className="proof-footer">structural · integrity · consistency</div>
           </div>
