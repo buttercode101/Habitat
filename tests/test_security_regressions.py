@@ -7,6 +7,7 @@ import pytest
 from habitat.claims import Claim
 from habitat.events import ingest_event, signature_for
 from habitat.schema import Action, Habitat, Job
+from habitat.server import _AuthRateLimiter
 from habitat.store import PBKDF2_ITERATIONS, Store
 from habitat.verify import verify_claim
 
@@ -87,3 +88,30 @@ def test_uncorrelated_claim_cannot_verify_from_unrelated_action(tmp_path):
     assert result.status == "rejected"
     assert result.evidence["reason"] == "claim_requires_correlation_or_external_evidence"
     store.close()
+
+
+def test_auth_rate_limiter_blocks_after_threshold_and_expires():
+    limiter = _AuthRateLimiter(max_failures=3, window_seconds=60, max_keys=2)
+    key = ("server", "203.0.113.10")
+    assert limiter.blocked(key, now=100) is False
+    assert limiter.record_failure(key, now=100) is False
+    assert limiter.record_failure(key, now=101) is False
+    assert limiter.record_failure(key, now=102) is True
+    assert limiter.blocked(key, now=103) is True
+    assert limiter.blocked(key, now=161) is False
+
+
+def test_auth_rate_limiter_success_clears_failures():
+    limiter = _AuthRateLimiter(max_failures=2, window_seconds=60)
+    key = ("agent", "203.0.113.11")
+    limiter.record_failure(key, now=100)
+    limiter.clear(key)
+    assert limiter.blocked(key, now=101) is False
+
+
+def test_auth_rate_limiter_bounds_tracked_keys():
+    limiter = _AuthRateLimiter(max_failures=2, window_seconds=60, max_keys=2)
+    limiter.record_failure(("agent", "203.0.113.1"), now=1)
+    limiter.record_failure(("agent", "203.0.113.2"), now=2)
+    limiter.record_failure(("agent", "203.0.113.3"), now=3)
+    assert len(limiter._failures) <= 2
