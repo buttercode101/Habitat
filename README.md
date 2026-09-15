@@ -34,6 +34,27 @@ Agent → Event → Habitat ledger → Integrity → Verification → Signal →
                        SQLite
 ```
 
+## Prove a run in 30 seconds
+
+When a run has been recorded in Habitat, create a portable proof and a short card you can paste into a PR, issue, or Slack message:
+
+```bash
+habitat prove \
+  --run-id run-42 \
+  --claim "deployed v1.2.3 to production" \
+  -o proof.json --card
+
+python tools/verify_proof.py proof.json
+```
+
+The `prove` command binds the claim to the supplied run ID, verifies the recorded evidence, exports `proof.json`, and can emit a compact `proof.md` card. The standalone verifier checks the portable bundle without needing the producer's database or network service.
+
+For a complete executable example:
+
+```bash
+python examples/prove_run.py
+```
+
 ## Portable proof exchange
 
 Habitat can export a portable `proof.json` that another machine can verify without access to the producer's database or network service.
@@ -52,13 +73,13 @@ python tools/verify_proof.py proof.json
 VALID / INVALID
 ```
 
-The producer CLI supports one-command export:
+The producer CLI also supports direct export from an existing claim:
 
 ```bash
 habitat proof <claim-id> --output proof.json
 ```
 
-The repository also includes a GitHub Actions workflow that can verify a checked-in `proof.json` (or a manually selected proof path). This makes proof verification usable as a CI gate without installing Habitat or its runtime dependencies.
+The repository includes a GitHub Actions workflow that can verify a checked-in `proof.json` (or a manually selected proof path). This makes proof verification usable as a CI gate without installing Habitat or its runtime dependencies.
 
 See `VERIFY_PROOF.md`, `ADOPTION.md`, and `examples/proof_exchange.py`.
 
