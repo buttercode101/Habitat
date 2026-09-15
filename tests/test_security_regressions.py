@@ -7,7 +7,7 @@ import pytest
 from habitat.claims import Claim
 from habitat.events import ingest_event, signature_for
 from habitat.schema import Action, Habitat, Job
-from habitat.server import _AuthRateLimiter
+from habitat.server import HabitatHTTPServer, _AuthRateLimiter, make_handler
 from habitat.store import PBKDF2_ITERATIONS, Store
 from habitat.verify import verify_claim
 
@@ -115,3 +115,23 @@ def test_auth_rate_limiter_bounds_tracked_keys():
     limiter.record_failure(("agent", "203.0.113.2"), now=2)
     limiter.record_failure(("agent", "203.0.113.3"), now=3)
     assert len(limiter._failures) <= 2
+
+
+def test_http_server_drops_connections_when_cap_is_reached():
+    handler = make_handler(":memory:", None, protect_remote=False)
+    server = HabitatHTTPServer(("127.0.0.1", 0), handler, max_connections=1)
+
+    class FakeRequest:
+        closed = False
+
+        def close(self):
+            self.closed = True
+
+    request = FakeRequest()
+    assert server._connection_slots.acquire(blocking=False) is True
+    try:
+        server.process_request(request, ("127.0.0.1", 12345))
+        assert request.closed is True
+    finally:
+        server._connection_slots.release()
+        server.server_close()
