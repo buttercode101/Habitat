@@ -1,6 +1,9 @@
 name: Real project proofs
 
 on:
+  push:
+    paths:
+      - '.github/workflows/real-project-proofs.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,7 +28,6 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          import uuid
           from datetime import datetime, timezone
           from pathlib import Path
 
@@ -65,58 +67,49 @@ jobs:
           ]
 
           now = datetime.now(timezone.utc)
-          db = Path("/tmp/habitat-real-proofs.db")
-          store = Store(db)
-          store.save_habitat(Habitat("real-projects", "Real Project Proofs"))
-
-          out = Path("proofs")
+          store = Store(Path('/tmp/habitat-real-proofs.db'))
+          store.save_habitat(Habitat('real-projects', 'Real Project Proofs'))
+          out = Path('proofs')
           out.mkdir(exist_ok=True)
 
           for item in projects:
               action_id = f"{item['key']}-commit-{item['commit'][:12]}"
-              run_id = item["commit"]
               action = Action(
                   id=action_id,
-                  habitat_id="real-projects",
+                  habitat_id='real-projects',
                   timestamp=now,
-                  actor="github",
-                  action="commit",
-                  status="ok",
+                  actor='github',
+                  action='commit',
+                  status='ok',
                   job_id=None,
                   details={
-                      "repo": item["repo"],
-                      "commit": item["commit"],
-                      "summary": item["summary"],
-                      "url": item["url"],
-                      "source": "existing_real_project_commit",
+                      'repo': item['repo'],
+                      'commit': item['commit'],
+                      'summary': item['summary'],
+                      'url': item['url'],
+                      'source': 'existing_real_project_commit',
                   },
-                  run_id=run_id,
+                  run_id=item['commit'],
               )
               store.save_action(action)
 
-              claim = Claim.new(
-                  "real-projects",
-                  item["claim"],
-                  action="commit",
-                  expected_status="ok",
-              )
-              claim.run_id = run_id
+              claim = Claim.new('real-projects', item['claim'], action='commit', expected_status='ok')
+              claim.run_id = item['commit']
               store.save_claim(claim)
 
               verified = verify_claim(store, claim)
-              if verified.status != "verified":
+              if verified.status != 'verified':
                   raise SystemExit(f"claim verification failed for {item['key']}: {verified.status}")
 
               proof = build_proof(store, verified.id)
               result = verify_proof(proof)
-              if not result.get("valid"):
+              if not result.get('valid'):
                   raise SystemExit(f"standalone proof verification failed for {item['key']}: {result}")
 
-              proof_path = out / f"{item['key']}-{item['commit'][:8]}.json"
-              card_path = out / f"{item['key']}-{item['commit'][:8]}.md"
-              proof_path.write_text(json.dumps(proof, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-              card_path.write_text(render_proof_card(proof, result), encoding="utf-8")
-              print(f"VALID {item['key']}: {proof_path}")
+              stem = f"{item['key']}-{item['commit'][:8]}"
+              (out / f'{stem}.json').write_text(json.dumps(proof, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+              (out / f'{stem}.md').write_text(render_proof_card(proof, result), encoding='utf-8')
+              print(f"VALID {item['key']}: {stem}")
 
           store.close()
           PY
