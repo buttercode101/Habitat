@@ -4,7 +4,7 @@ from __future__ import annotations
 from html import escape
 from pathlib import Path
 
-from .schema import Action, Habitat, Job, Signal
+from .schema import Action, Claim, Habitat, Job, Signal
 
 
 def _page(title: str, body: str) -> str:
@@ -36,9 +36,10 @@ footer {{ border-top:1px solid var(--line);padding:28px 0 44px;color:var(--muted
 .kpis {{ display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px }} .kpi,.panel {{ border:1px solid var(--line);background:var(--surface);border-radius:12px }} .kpi {{ padding:18px }} .kpi .value {{ font-size:30px;font-weight:720;letter-spacing:-.04em }} .kpi .value small {{ color:var(--muted);font-size:14px;font-weight:500 }} .kpi .label {{ color:var(--muted);font-size:12px;margin-top:3px }}
 .panel {{ padding:20px;margin-bottom:12px }} .panel h2 {{ font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:0 0 14px }} .panel.attention {{ border-color:#54302f }} .panel.calm {{ border-color:#244735 }}
 .signal {{ display:flex;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line) }} .signal:last-child {{ border:0 }} .badge {{ font-size:10px;font-weight:800;border-radius:5px;padding:3px 6px }} .badge.critical {{ background:var(--danger);color:#190708 }} .badge.warning {{ background:var(--warn);color:#191405 }} .ok {{ color:var(--ok) }}
+.claim-grid {{ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px }} .claim {{ border:1px solid var(--line);background:#0d0f13;border-radius:10px;padding:16px }} .claim-top {{ display:flex;justify-content:space-between;gap:12px;align-items:flex-start }} .claim-id {{ color:var(--muted);font:11px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere }} .claim-text {{ margin:10px 0 14px;font-size:15px }} .claim-meta {{ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;color:var(--muted);font-size:12px }} .claim-meta strong {{ display:block;color:var(--text);font-size:12px;margin-top:2px;overflow-wrap:anywhere }} .claim-actions {{ display:flex;flex-wrap:wrap;gap:8px;margin-top:14px }} .mini {{ min-height:34px;padding:0 11px;font-size:12px }} .status-verified {{ color:var(--ok) }} .status-rejected {{ color:var(--danger) }} .status-pending {{ color:var(--warn) }}
 table {{ width:100%;border-collapse:collapse;font-size:13px }} th,td {{ padding:10px 8px;text-align:left;border-bottom:1px solid var(--line) }} th {{ color:var(--muted);font-size:11px;font-weight:550 }} tr:last-child td {{ border-bottom:0 }}
-@media(max-width:760px) {{ .container {{ width:min(100% - 28px,1120px) }} .navlinks a:not(.button) {{ display:none }} .hero {{ padding:68px 0 58px }} .flow {{ grid-template-columns:1fr;padding:20px }} .arrow {{ transform:rotate(90deg) }} .cards,.kpis {{ grid-template-columns:1fr 1fr }} .dashhead {{ align-items:flex-start;flex-direction:column }} .panel {{ overflow:auto }} table {{ min-width:650px }} }}
-@media(max-width:460px) {{ h1 {{ font-size:46px }} .cards,.kpis {{ grid-template-columns:1fr }} footer {{ flex-direction:column }} }}
+@media(max-width:760px) {{ .container {{ width:min(100% - 28px,1120px) }} .navlinks a:not(.button) {{ display:none }} .hero {{ padding:68px 0 58px }} .flow {{ grid-template-columns:1fr;padding:20px }} .arrow {{ transform:rotate(90deg) }} .cards,.kpis,.claim-grid {{ grid-template-columns:1fr 1fr }} .dashhead {{ align-items:flex-start;flex-direction:column }} .panel {{ overflow:auto }} table {{ min-width:650px }} }}
+@media(max-width:460px) {{ h1 {{ font-size:46px }} .cards,.kpis,.claim-grid {{ grid-template-columns:1fr }} footer {{ flex-direction:column }} }}
 </style></head><body>{body}</body></html>"""
 
 
@@ -61,7 +62,18 @@ def render_landing(title: str = "Habitat") -> str:
     return _page(f"{title} — Agent accountability", body)
 
 
-def render_dashboard(habitat: Habitat, jobs: list[Job], signals: list[Signal], actions: list[Action], title: str = "Habitat") -> str:
+def _claim_evidence(claim: Claim) -> str:
+    evidence = claim.evidence if isinstance(claim.evidence, list) else []
+    if not evidence:
+        return "No recorded evidence"
+    first = evidence[0] if isinstance(evidence[0], dict) else {}
+    source = first.get("source") or "unspecified"
+    status = first.get("status") or "unspecified"
+    return f"{escape(str(source))} · {escape(str(status))}"
+
+
+def render_dashboard(habitat: Habitat, jobs: list[Job], signals: list[Signal], actions: list[Action], title: str = "Habitat", claims: list[Claim] | None = None) -> str:
+    claims = claims or []
     unresolved = [s for s in signals if s.resolved_at is None and s.severity in ("critical", "warning")]
     unresolved.sort(key=lambda s: (0 if s.severity == "critical" else 1, s.detected_at))
     enabled = sum(j.enabled for j in jobs)
@@ -70,11 +82,23 @@ def render_dashboard(habitat: Habitat, jobs: list[Job], signals: list[Signal], a
     attention = "".join(f'<div class="signal"><span class="badge {escape(s.severity)}">{escape(s.severity.upper())}</span><span><strong>{escape(s.code)}</strong> — {escape(s.message)}</span></div>' for s in unresolved) or '<div class="ok">All clear. Nothing needs attention.</div>'
     rows = "".join(f'<tr><td>{escape(j.name)}</td><td>{"enabled" if j.enabled else "disabled"}</td><td>{escape(j.last_status or "—")}</td><td>{j.failure_streak}</td><td>{escape(j.last_error or "—")}</td></tr>' for j in jobs) or '<tr><td colspan="5">No jobs configured.</td></tr>'
     acts = "".join(f'<tr><td>{escape(a.timestamp.strftime("%Y-%m-%d %H:%M"))}</td><td>{escape(a.actor)}</td><td>{escape(a.action)}</td><td>{escape(a.status)}</td></tr>' for a in actions[:20]) or '<tr><td colspan="4">No recent actions.</td></tr>'
+    claim_cards = "".join(
+        f'<article class="claim"><div class="claim-top"><span class="claim-id">{escape(c.id)}</span><strong class="status-{escape(c.status)}">{escape(c.status.upper())}</strong></div>'
+        f'<div class="claim-text">{escape(c.claim)}</div><div class="claim-meta">'
+        f'<div>Expected<strong>{escape(c.expected_status)}</strong></div>'
+        f'<div>Evidence<strong>{_claim_evidence(c)}</strong></div>'
+        f'<div>Run<strong>{escape(c.run_id or "—")}</strong></div>'
+        f'<div>Job<strong>{escape(c.job_id or "—")}</strong></div></div>'
+        f'<div class="claim-actions"><a class="button secondary mini" href="/v1/claims/{escape(c.id)}/verify" target="_blank" rel="noreferrer">Verify now</a>'
+        f'<a class="button secondary mini" href="/v1/claims/{escape(c.id)}/proof" target="_blank" rel="noreferrer">Inspect proof</a></div></article>'
+        for c in claims[:20]
+    ) or '<div class="ok">No claims recorded yet.</div>'
     panel_class = "attention" if unresolved else "calm"
     body = f"""<header class="container nav"><a class="brand" href="/"><span class="mark"></span>Habitat</a><nav class="navlinks"><a href="/">Overview</a><a href="/dashboard" class="button">Supervision</a></nav></header>
 <main class="container dashboard"><div class="dashhead"><div><h1>{escape(title)}</h1><div class="dashsub">{escape(habitat.status)} · {escape(habitat.model)} · local supervision</div></div><a class="button secondary" href="/">What is Habitat?</a></div>
 <div class="kpis"><div class="kpi"><div class="value">{enabled}<small>/{len(jobs)}</small></div><div class="label">Jobs enabled</div></div><div class="kpi"><div class="value">{ok}</div><div class="label">Successful runs</div></div><div class="kpi"><div class="value">{failed}</div><div class="label">Failed runs</div></div><div class="kpi"><div class="value">{len(unresolved)}</div><div class="label">Needs attention</div></div></div>
 <section class="panel {panel_class}"><h2>Needs attention</h2>{attention}</section>
+<section class="panel"><h2>Claims &amp; proof</h2><div class="claim-grid">{claim_cards}</div></section>
 <section class="panel"><h2>Jobs &amp; health</h2><table><thead><tr><th>Name</th><th>State</th><th>Last status</th><th>Failure streak</th><th>Last error</th></tr></thead><tbody>{rows}</tbody></table></section>
 <section class="panel"><h2>Recent actions</h2><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Status</th></tr></thead><tbody>{acts}</tbody></table></section></main>"""
     return _page(f"{title} — Supervision", body)
