@@ -1,9 +1,22 @@
 type Json = Record<string, unknown>;
 
 function baseUrl() {
-  const value = process.env.HABITAT_API_URL?.trim();
-  if (!value) throw new Error("HABITAT_API_URL is not configured");
-  return value.replace(/\/$/, "");
+  const raw = process.env.HABITAT_API_URL?.trim();
+  if (!raw) throw new Error("HABITAT_API_URL is not configured");
+
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error("HABITAT_API_URL is invalid");
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+    throw new Error("HABITAT_API_URL must be an HTTP(S) URL without embedded credentials");
+  }
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
+    throw new Error("HABITAT_API_URL must use HTTPS in production");
+  }
+  return url.toString().replace(/\/$/, "");
 }
 
 function headers() {
@@ -15,7 +28,8 @@ function headers() {
 export async function habitatFetch<T = Json>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${baseUrl()}${path}`, {
     ...init,
-    headers: { ...headers(), ...(init.headers || {}) },
+    headers: { ...(init.headers || {}), ...headers() },
+    signal: init.signal ?? AbortSignal.timeout(10_000),
     cache: "no-store",
   });
   const text = await response.text();

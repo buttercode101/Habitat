@@ -6,7 +6,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   try {
     const { id } = await params;
     return Response.json(await verifyClaim(id), { headers: { "Cache-Control": "no-store" } });
-  } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "verification_failed" }, { status: 502, headers: { "Cache-Control": "no-store" } });
+  } catch {
+    return Response.json({ error: "verification_failed" }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }
 }
