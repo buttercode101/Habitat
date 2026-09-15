@@ -9,7 +9,6 @@ import uuid
 from .claims import Claim
 from .schema import Action, utcnow
 from .store import Store
-from .verify import verify_claim
 
 MAX_EVENT_BYTES = 256 * 1024
 ALLOWED_TYPES = {"agent.heartbeat", "job.started", "job.completed", "job.failed", "claim.submitted"}
@@ -31,6 +30,10 @@ def valid_signature(secret, body, supplied):
     except ValueError:
         return False
     return hmac.compare_digest(signature_for(secret, body), normalized)
+
+
+def _reject_constant(value):
+    raise ValueError(f"non_standard_json_number:{value}")
 
 
 def _validate(p, store):
@@ -62,7 +65,7 @@ def ingest_event(store, body, signature, secret, require_signature=True, agent_i
     if len(body) > MAX_EVENT_BYTES:
         raise ValueError("event_too_large")
     try:
-        p = json.loads(body.decode())
+        p = json.loads(body.decode("utf-8"), parse_constant=_reject_constant)
     except Exception as exc:
         raise ValueError("invalid_json") from exc
     if not isinstance(p, dict):
