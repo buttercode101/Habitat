@@ -4,7 +4,8 @@ from __future__ import annotations
 from html import escape
 from pathlib import Path
 
-from .schema import Action, Claim, Habitat, Job, Signal
+from .claims import Claim
+from .schema import Action, Habitat, Job, Signal
 
 
 def _page(title: str, body: str) -> str:
