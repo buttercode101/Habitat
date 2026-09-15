@@ -6,8 +6,10 @@ file to a consumer machine and run:
 
     python verify_proof.py proof.json
 
-It verifies bundle integrity and internal claim/ledger consistency. It does
-not establish publisher identity or external-world truth.
+It verifies bundle structure, content integrity, and internal consistency. It
+reports a present signature as unverified because the zero-install verifier
+does not ship a cryptography implementation. Publisher trust and external
+world truth are never inferred from a bundle alone.
 """
 from __future__ import annotations
 
@@ -22,12 +24,12 @@ def canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
-def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
-    errors: list[str] = []
+def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
     required = {"proof_version", "claim", "ledger", "content_sha256"}
     missing = sorted(required - set(bundle))
     if missing:
         errors.append("missing fields: " + ", ".join(missing))
+
     if bundle.get("proof_version") != "1":
         errors.append("unsupported proof_version")
 
@@ -37,6 +39,31 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         errors.append("claim must be an object")
     if not isinstance(ledger, dict):
         errors.append("ledger must be an object")
+    if not isinstance(bundle.get("content_sha256"), str):
+        errors.append("content_sha256 must be a string")
+
+    if isinstance(ledger, dict):
+        if ledger.get("integrity") not in {"intact", "failed"}:
+            errors.append("ledger.integrity must be 'intact' or 'failed'")
+        if not isinstance(ledger.get("actions"), list):
+            errors.append("ledger.actions must be an array")
+
+    if isinstance(bundle.get("signature"), dict):
+        signature = bundle["signature"]
+        if signature.get("algorithm") != "Ed25519":
+            errors.append("signature.algorithm must be 'Ed25519'")
+        for field in ("key_id", "agent_id", "public_key", "signature"):
+            if field not in signature:
+                errors.append(f"signature.{field} is required")
+    elif "signature" in bundle:
+        errors.append("signature must be an object")
+
+
+def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
+    errors: list[str] = []
+    structure_errors: list[str] = []
+    _validate_structure(bundle, structure_errors)
+    errors.extend(structure_errors)
 
     expected = bundle.get("content_sha256")
     actual = None
@@ -47,18 +74,14 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         actual = hashlib.sha256(canonical(digest_input).encode()).hexdigest()
         if actual != expected:
             errors.append("content_sha256 mismatch")
-    else:
-        errors.append("content_sha256 must be a string")
 
-    integrity = ledger.get("integrity") if isinstance(ledger, dict) else None
-    if integrity not in {"intact", "failed"}:
-        errors.append("ledger.integrity must be 'intact' or 'failed'")
-
+    integrity = bundle.get("ledger", {}).get("integrity") if isinstance(bundle.get("ledger"), dict) else None
+    claim = bundle.get("claim")
+    ledger = bundle.get("ledger")
+    relationship_errors_before = len(errors)
     if isinstance(claim, dict) and isinstance(ledger, dict):
         actions = ledger.get("actions")
-        if not isinstance(actions, list):
-            errors.append("ledger.actions must be an array")
-        else:
+        if isinstance(actions, list):
             for index, action in enumerate(actions):
                 if not isinstance(action, dict):
                     errors.append(f"ledger.actions[{index}] must be an object")
@@ -86,6 +109,11 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     if verdict == "verified" and integrity != "intact":
         errors.append("verified claim cannot have failed ledger integrity")
 
+    relationship_valid = len(errors) == relationship_errors_before
+    content_valid = isinstance(actual, str) and actual == expected
+    signature = bundle.get("signature")
+    signature_state = "absent" if signature is None else "present-unverified"
+
     return {
         "valid": not errors,
         "content_sha256": actual,
@@ -94,6 +122,14 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         "errors": errors,
         "scope": "bundle-integrity-and-internal-consistency",
         "authenticity": "not-established",
+        "assurance": {
+            "structural_validity": not structure_errors,
+            "content_integrity": content_valid,
+            "internal_consistency": relationship_valid and not (verdict == "verified" and integrity != "intact"),
+            "signature": signature_state,
+            "publisher_trust": "not-assessed",
+            "external_truth": "not-established",
+        },
     }
 
 
