@@ -10,6 +10,10 @@ venv/
 dashboard.html
 dist/
 build/
+.next/
+web/node_modules/
+.vercel/
+npm-debug.log*
 .DS_Store
 .idea/
 .vscode/
