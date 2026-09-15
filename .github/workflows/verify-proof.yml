@@ -39,7 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           proof="${PROOF_INPUT:-proof.json}"
-          if [[ -z "$proof" || "$proof" == /* || "$proof" == *$'\n'* || "$proof" == *$'\r'* || "$proof" == *$'\0'* ]]; then
+          if [[ -z "$proof" || "$proof" == /* || "$proof" == *$'\n'* || "$proof" == *$'\r'* ]]; then
             echo "Invalid proof path" >&2
             exit 1
           fi
