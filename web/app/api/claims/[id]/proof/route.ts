@@ -1,4 +1,4 @@
-import { getProof } from "../../../../../../lib/habitat";
+import { getProof } from "../../../../../lib/habitat";
 
 export const dynamic = "force-dynamic";
 
