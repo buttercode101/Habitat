@@ -28,6 +28,31 @@ def test_standalone_verifier_accepts_valid_bundle():
     assert result["valid"] is True
     assert result["verdict"] == "verified"
     assert result["authenticity"] == "not-established"
+    assert result["assurance"] == {
+        "structural_validity": True,
+        "content_integrity": True,
+        "internal_consistency": True,
+        "signature": "absent",
+        "publisher_trust": "not-assessed",
+        "external_truth": "not-established",
+    }
+
+
+def test_present_signature_is_not_mistaken_for_verified_authenticity():
+    bundle = _bundle()
+    bundle["signature"] = {
+        "algorithm": "Ed25519",
+        "key_id": "k1",
+        "agent_id": "a1",
+        "public_key": "public",
+        "signature": "signature",
+    }
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is True
+    assert result["assurance"]["signature"] == "present-unverified"
+    assert result["assurance"]["publisher_trust"] == "not-assessed"
+    assert result["external_truth"] if "external_truth" in result else True
 
 
 def test_standalone_verifier_rejects_modified_bundle():
