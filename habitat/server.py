@@ -21,6 +21,8 @@ from .store import Store
 from .generate import render_dashboard
 from .verify_api import proof_status, verify_and_prove
 
+MAX_HTTP_CONNECTIONS = 64
+
 
 class _AuthRateLimiter:
     """Bound repeated remote authentication failures without affecting localhost."""
@@ -61,6 +63,35 @@ class _AuthRateLimiter:
     def clear(self, key):
         with self._lock:
             self._failures.pop(key, None)
+
+
+class HabitatHTTPServer(ThreadingHTTPServer):
+    """Threaded HTTP server with a hard cap on active request threads."""
+
+    allow_reuse_address = True
+    daemon_threads = True
+
+    def __init__(self, server_address, handler_cls, max_connections=MAX_HTTP_CONNECTIONS):
+        if max_connections <= 0:
+            raise ValueError("max_connections must be positive")
+        self._connection_slots = threading.BoundedSemaphore(max_connections)
+        super().__init__(server_address, handler_cls)
+
+    def process_request(self, request, client_address):
+        if not self._connection_slots.acquire(blocking=False):
+            request.close()
+            return
+        try:
+            super().process_request(request, client_address)
+        except Exception:
+            self._connection_slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._connection_slots.release()
 
 
 def _is_loopback_host(host: str) -> bool:
@@ -253,10 +284,6 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
 def serve(db_path, host="127.0.0.1", port=8787, secret=None, require_signature=True):
     if not _is_loopback_host(host) and not secret:
         raise ValueError("non-loopback listeners require a server secret")
-
-    class HabitatHTTPServer(ThreadingHTTPServer):
-        allow_reuse_address = True
-        daemon_threads = True
 
     httpd = HabitatHTTPServer((host, port), make_handler(db_path, secret, require_signature, protect_remote=True))
     print(f"Habitat API listening on http://{host}:{port}")
