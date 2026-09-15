@@ -52,9 +52,15 @@ python tools/verify_proof.py proof.json
 VALID / INVALID
 ```
 
+The producer CLI supports one-command export:
+
+```bash
+habitat proof <claim-id> --output proof.json
+```
+
 The repository also includes a GitHub Actions workflow that can verify a checked-in `proof.json` (or a manually selected proof path). This makes proof verification usable as a CI gate without installing Habitat or its runtime dependencies.
 
-See `VERIFY_PROOF.md`, `ADOPTION.md`, and `examples/proof_exchange.md`.
+See `VERIFY_PROOF.md`, `ADOPTION.md`, and `examples/proof_exchange.py`.
 
 ## What Habitat proves — and what it does not
 
