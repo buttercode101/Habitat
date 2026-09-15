@@ -154,6 +154,18 @@ def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], error
     evidence = claim.get("evidence")
     if not isinstance(evidence, dict):
         return
+    if claim.get("status") == "verified":
+        if not evidence:
+            errors.append("verified claim must include evidence")
+        else:
+            source = evidence.get("source")
+            if not isinstance(source, str) or not source:
+                errors.append("verified claim evidence must identify a source")
+            evidence_status = evidence.get("status")
+            if evidence_status != expected_status:
+                errors.append("verified claim evidence status does not match claim.expected_status")
+            if source == "habitat_trusted_ledger" and not evidence.get("action_id"):
+                errors.append("trusted-ledger verification must identify evidence.action_id")
     evidence_action_id = evidence.get("action_id")
     if evidence_action_id is None:
         return
