@@ -2,6 +2,8 @@
 
 Habitat uses a two-layer deployment model. The persistent Python Habitat service remains the source of truth for SQLite, the ledger, policy evaluation, events, agents, claims and proof generation. Vercel hosts the public landing page plus the inspection UI and a small server-side proxy that keeps the Habitat bearer token off the browser.
 
+**Live site:** https://habitat-za.vercel.app
+
 The existing SQLite-backed HTTP service is intentionally not moved into a Vercel serverless function. Vercel is the presentation/API edge; the durable Habitat process belongs on a persistent service.
 
 ## Vercel project
