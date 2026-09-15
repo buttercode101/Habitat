@@ -64,13 +64,15 @@ def render_landing(title: str = "Habitat") -> str:
 
 
 def _claim_evidence(claim: Claim) -> str:
-    evidence = claim.evidence if isinstance(claim.evidence, list) else []
+    evidence = claim.evidence if isinstance(claim.evidence, dict) else {}
     if not evidence:
         return "No recorded evidence"
-    first = evidence[0] if isinstance(evidence[0], dict) else {}
-    source = first.get("source") or "unspecified"
-    status = first.get("status") or "unspecified"
-    return f"{escape(str(source))} · {escape(str(status))}"
+    parts = []
+    for key in ("source", "status", "action_id", "run_id", "adapter"):
+        value = evidence.get(key)
+        if value not in (None, ""):
+            parts.append(f"{escape(str(key))}: {escape(str(value))}")
+    return " · ".join(parts) if parts else "Recorded evidence"
 
 
 def render_dashboard(habitat: Habitat, jobs: list[Job], signals: list[Signal], actions: list[Action], title: str = "Habitat", claims: list[Claim] | None = None) -> str:
