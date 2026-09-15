@@ -12,6 +12,7 @@ on:
       - 'proof.json'
       - 'proofs/**/*.json'
       - 'tools/verify_proof.py'
+      - '.github/workflows/verify-proof.yml'
 
 permissions:
   contents: read
