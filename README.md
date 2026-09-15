@@ -4,6 +4,8 @@
 
 > Agents can tell you what they did. Habitat helps you verify whether the record supports the claim.
 
+**Live site:** https://habitat-za.vercel.app
+
 Habitat is deliberately smaller than a full observability or orchestration platform. It records trusted actions locally, accepts authenticated structured events, correlates work with run IDs, verifies claims against a tamper-evident action ledger or explicit external evidence, and raises supervision signals when behavior needs attention.
 
 ## Why Habitat exists
