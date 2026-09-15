@@ -1,0 +1,54 @@
+{
+  "claim": {
+    "action": "commit",
+    "claim": "Shipped Diketo change: added low-end performance soft limits for the game.",
+    "created_at": "2026-09-15T13:39:37.606636+00:00",
+    "evidence": {
+      "action": "commit",
+      "action_id": "diketo-commit-3e308dfce343",
+      "details": {
+        "commit": "3e308dfce343e137a08b11d0810884d3d27f75d9",
+        "repo": "buttercode101/Diketo",
+        "source": "existing_real_project_commit",
+        "summary": "Add low-end performance soft limits.",
+        "url": "https://github.com/buttercode101/Diketo/commit/3e308dfce343e137a08b11d0810884d3d27f75d9"
+      },
+      "run_id": "3e308dfce343e137a08b11d0810884d3d27f75d9",
+      "source": "habitat_trusted_ledger",
+      "status": "ok",
+      "timestamp": "2026-09-15T13:39:37.000666+00:00"
+    },
+    "expected_status": "ok",
+    "habitat_id": "real-projects",
+    "id": "f13b6e4a-c563-4af4-9d3c-4953cee71534",
+    "job_id": null,
+    "run_id": "3e308dfce343e137a08b11d0810884d3d27f75d9",
+    "status": "verified",
+    "verified_at": "2026-09-15T13:39:37.607340+00:00"
+  },
+  "content_sha256": "33ef95ebac81b630344a725b25c4ea3d528bd5094b264bbfb8165570c8f5064b",
+  "generated_at": "2026-09-15T13:39:37.607930+00:00",
+  "ledger": {
+    "actions": [
+      {
+        "action": "commit",
+        "actor": "github",
+        "details": {
+          "commit": "3e308dfce343e137a08b11d0810884d3d27f75d9",
+          "repo": "buttercode101/Diketo",
+          "source": "existing_real_project_commit",
+          "summary": "Add low-end performance soft limits.",
+          "url": "https://github.com/buttercode101/Diketo/commit/3e308dfce343e137a08b11d0810884d3d27f75d9"
+        },
+        "habitat_id": "real-projects",
+        "id": "diketo-commit-3e308dfce343",
+        "job_id": null,
+        "run_id": "3e308dfce343e137a08b11d0810884d3d27f75d9",
+        "status": "ok",
+        "timestamp": "2026-09-15T13:39:37.000666+00:00"
+      }
+    ],
+    "integrity": "intact"
+  },
+  "proof_version": "1"
+}

@@ -1,0 +1,54 @@
+{
+  "claim": {
+    "action": "commit",
+    "claim": "Shipped SoloBid-v2 change: added invoice-native DueToday coverage and UI lanes.",
+    "created_at": "2026-09-15T13:39:37.601628+00:00",
+    "evidence": {
+      "action": "commit",
+      "action_id": "solobid-v2-commit-5d5f169f9337",
+      "details": {
+        "commit": "5d5f169f93376fc1cb969fd72df44c3b5c1da246",
+        "repo": "buttercode101/SoloBid-v2",
+        "source": "existing_real_project_commit",
+        "summary": "Add invoice-native DueToday coverage and UI lanes.",
+        "url": "https://github.com/buttercode101/SoloBid-v2/commit/5d5f169f93376fc1cb969fd72df44c3b5c1da246"
+      },
+      "run_id": "5d5f169f93376fc1cb969fd72df44c3b5c1da246",
+      "source": "habitat_trusted_ledger",
+      "status": "ok",
+      "timestamp": "2026-09-15T13:39:37.000666+00:00"
+    },
+    "expected_status": "ok",
+    "habitat_id": "real-projects",
+    "id": "b977a856-97fc-4b2d-839a-b55df8ce5ea9",
+    "job_id": null,
+    "run_id": "5d5f169f93376fc1cb969fd72df44c3b5c1da246",
+    "status": "verified",
+    "verified_at": "2026-09-15T13:39:37.604967+00:00"
+  },
+  "content_sha256": "e76d99b10070255ca4104a49735a68fba0056792881ae379a2c8e1f4970dafd8",
+  "generated_at": "2026-09-15T13:39:37.605783+00:00",
+  "ledger": {
+    "actions": [
+      {
+        "action": "commit",
+        "actor": "github",
+        "details": {
+          "commit": "5d5f169f93376fc1cb969fd72df44c3b5c1da246",
+          "repo": "buttercode101/SoloBid-v2",
+          "source": "existing_real_project_commit",
+          "summary": "Add invoice-native DueToday coverage and UI lanes.",
+          "url": "https://github.com/buttercode101/SoloBid-v2/commit/5d5f169f93376fc1cb969fd72df44c3b5c1da246"
+        },
+        "habitat_id": "real-projects",
+        "id": "solobid-v2-commit-5d5f169f9337",
+        "job_id": null,
+        "run_id": "5d5f169f93376fc1cb969fd72df44c3b5c1da246",
+        "status": "ok",
+        "timestamp": "2026-09-15T13:39:37.000666+00:00"
+      }
+    ],
+    "integrity": "intact"
+  },
+  "proof_version": "1"
+}
