@@ -1,15 +1,24 @@
-## Habitat Proof
+# Habitat Proof — Diketo
 
 **Claim:** Shipped Diketo change: added low-end performance soft limits for the game.
-**Status:** `VERIFIED`
-**Run / Job:** `3e308dfce343e137a08b11d0810884d3d27f75d9` / `—`
-**Evidence:** habitat_trusted_ledger · action `diketo-commit-3e308dfce343` · ledger `intact`
+
+| Check | Result |
+|---|---|
+| Habitat claim | `VERIFIED` |
+| Source | `habitat_trusted_ledger` |
+| Action | `diketo-commit-3e308dfce343` |
+| Run binding | `3e308dfce343e137a08b11d0810884d3d27f75d9` |
+| Ledger | `intact` |
+| External execution | **Vercel: success** |
+| Proof digest | `33ef95ebac81b630344a725b25c4ea3d528bd5094b264bbfb8165570c8f5064b` |
+
+## Verify independently
 
 ```bash
 python tools/verify_proof.py proof.json
 # → VALID
 ```
 
-Digest: `33ef95ebac81b630344a725b25c4ea3d528bd5094b264bbfb8165570c8f5064b`
+## Evidence boundary
 
-Assurance: structural · integrity · consistency established inside Habitat's evidence boundary. External truth and publisher trust are not established by this card alone.
+This proof establishes the recorded commit claim, proof integrity, and internal consistency. The referenced commit also has an external Vercel success status. Habitat does **not** infer publisher trust or real-world truth merely from a valid proof bundle; those remain separate assurance dimensions.
