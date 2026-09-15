@@ -2,11 +2,16 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Habitat — Agent accountability",
-  description: "A small local-first accountability and proof surface for AI agents.",
+  title: "Habitat — Prove what your AI agents did",
+  description: "Local-first accountability and portable proof for AI agents. Turn agent events into policy-checked claims you can inspect and verify.",
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "Habitat — Prove what your AI agents did",
+    description: "A small local-first evidence layer for AI agents.",
+    type: "website",
   },
 };
 
