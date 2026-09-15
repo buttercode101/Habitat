@@ -8,7 +8,7 @@ license = {text = "MIT"}
 dependencies = []
 
 [project.optional-dependencies]
-signing = ["cryptography>=42,<47"]
+signing = ["cryptography>=50.0.1,<51"]
 
 [project.scripts]
 habitat = "habitat.__main__:main"

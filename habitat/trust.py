@@ -50,10 +50,12 @@ class TrustRegistry:
         elif key.agent_id != agent_id:
             return False
         current = now or datetime.now(timezone.utc)
+        if current.tzinfo is None or current.utcoffset() is None:
+            current = current.replace(tzinfo=timezone.utc)
         expiry = key.expires_at
         if expiry is None:
             return True
-        if expiry.tzinfo is None:
+        if expiry.tzinfo is None or expiry.utcoffset() is None:
             expiry = expiry.replace(tzinfo=timezone.utc)
         return current < expiry
 

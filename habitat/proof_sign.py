@@ -10,7 +10,7 @@ from typing import Any
 
 
 def _canonical(value: dict[str, Any]) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
 
 
 def _unsigned(bundle: dict[str, Any]) -> dict[str, Any]:

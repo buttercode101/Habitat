@@ -33,6 +33,10 @@ def valid_signature(secret, body, supplied):
     return hmac.compare_digest(signature_for(secret, body), normalized)
 
 
+def _reject_constant(value):
+    raise ValueError(f"non_standard_json_number:{value}")
+
+
 def _validate(p, store):
     eid, typ, hid = p.get("id"), p.get("type"), p.get("habitat_id")
     if not isinstance(eid, str) or not eid.strip() or len(eid) > 200:
@@ -62,7 +66,7 @@ def ingest_event(store, body, signature, secret, require_signature=True, agent_i
     if len(body) > MAX_EVENT_BYTES:
         raise ValueError("event_too_large")
     try:
-        p = json.loads(body.decode())
+        p = json.loads(body.decode("utf-8"), parse_constant=_reject_constant)
     except Exception as exc:
         raise ValueError("invalid_json") from exc
     if not isinstance(p, dict):

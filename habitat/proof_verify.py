@@ -9,23 +9,37 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import math
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+MAX_PROOF_BYTES = 16 * 1024 * 1024
+MAX_PROOF_ACTIONS = 10_000
+
 
 def _canonical(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
 def _date_time(value: Any) -> bool:
     if not isinstance(value, str):
         return False
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return True
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00" if value.endswith("Z") else value)
+        return parsed.tzinfo is not None and parsed.utcoffset() is not None
     except ValueError:
         return False
+
+
+def _finite_json_numbers(value: Any) -> bool:
+    if isinstance(value, float):
+        return math.isfinite(value)
+    if isinstance(value, dict):
+        return all(isinstance(k, str) and _finite_json_numbers(v) for k, v in value.items())
+    if isinstance(value, list):
+        return all(_finite_json_numbers(v) for v in value)
+    return True
 
 
 def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
@@ -37,10 +51,12 @@ def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
         errors.append("unknown fields: " + ", ".join(unknown))
     if missing:
         errors.append("missing fields: " + ", ".join(missing))
+    if not _finite_json_numbers(bundle):
+        errors.append("non-finite JSON numbers are not allowed")
     if bundle.get("proof_version") != "1":
         errors.append("unsupported proof_version")
     if not _date_time(bundle.get("generated_at")):
-        errors.append("generated_at must be an ISO-8601 date-time")
+        errors.append("generated_at must be an ISO-8601 date-time with timezone")
     if not isinstance(bundle.get("content_sha256"), str) or len(bundle.get("content_sha256", "")) != 64 or any(c not in "0123456789abcdef" for c in bundle.get("content_sha256", "")):
         errors.append("content_sha256 must be 64 lowercase hexadecimal characters")
 
@@ -64,9 +80,9 @@ def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
             if claim.get(field) is not None and not isinstance(claim.get(field), str):
                 errors.append(f"claim.{field} must be a string or null")
         if not _date_time(claim.get("created_at")):
-            errors.append("claim.created_at must be an ISO-8601 date-time")
+            errors.append("claim.created_at must be an ISO-8601 date-time with timezone")
         if claim.get("verified_at") is not None and not _date_time(claim.get("verified_at")):
-            errors.append("claim.verified_at must be an ISO-8601 date-time or null")
+            errors.append("claim.verified_at must be an ISO-8601 date-time with timezone or null")
 
     if not isinstance(ledger, dict):
         errors.append("ledger must be an object")
@@ -79,8 +95,10 @@ def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
         if not isinstance(actions, list):
             errors.append("ledger.actions must be an array")
         else:
+            if len(actions) > MAX_PROOF_ACTIONS:
+                errors.append(f"ledger.actions exceeds maximum of {MAX_PROOF_ACTIONS}")
             required_action = {"id", "habitat_id", "job_id", "timestamp", "actor", "action", "status", "details", "run_id"}
-            for index, action in enumerate(actions):
+            for index, action in enumerate(actions[:MAX_PROOF_ACTIONS]):
                 if not isinstance(action, dict):
                     errors.append(f"ledger.actions[{index}] must be an object")
                     continue
@@ -95,7 +113,7 @@ def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
                     if action.get(field) is not None and not isinstance(action.get(field), str):
                         errors.append(f"ledger.actions[{index}].{field} must be a string or null")
                 if not _date_time(action.get("timestamp")):
-                    errors.append(f"ledger.actions[{index}].timestamp must be an ISO-8601 date-time")
+                    errors.append(f"ledger.actions[{index}].timestamp must be an ISO-8601 date-time with timezone")
 
     if "signature" in bundle:
         signature = bundle["signature"]
@@ -180,13 +198,16 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
 
     expected = bundle.get("content_sha256")
     actual = None
-    if isinstance(expected, str):
+    if isinstance(expected, str) and not any(e == "non-finite JSON numbers are not allowed" for e in structure_errors):
         digest_input = dict(bundle)
         digest_input.pop("generated_at", None)
         digest_input.pop("content_sha256", None)
         digest_input.pop("signature", None)
-        actual = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
-        if actual != expected:
+        try:
+            actual = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
+        except (TypeError, ValueError):
+            actual = None
+        if actual is not None and actual != expected:
             errors.append("content_sha256 mismatch")
 
     claim = bundle.get("claim")
@@ -225,8 +246,14 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
 
 
 def verify_file(path: str | Path) -> dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as handle:
-        value = json.load(handle)
+    path = Path(path)
+    if path.stat().st_size > MAX_PROOF_BYTES:
+        return {"valid": False, "errors": [f"proof bundle exceeds maximum size of {MAX_PROOF_BYTES} bytes"]}
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            value = json.load(handle, parse_constant=lambda value: (_ for _ in ()).throw(ValueError("invalid_json_constant")))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        return {"valid": False, "errors": [str(exc)]}
     if not isinstance(value, dict):
         return {"valid": False, "errors": ["proof bundle must be a JSON object"]}
     return verify_proof(value)
