@@ -12,8 +12,9 @@ function field(value: unknown) {
 }
 
 function actionFor(proof: JsonObject, actionId: unknown) {
-  const actions = Array.isArray(object(proof.ledger).actions) ? object(proof.ledger).actions : [];
-  return actions.map(object).find((action) => action.id === actionId) || null;
+  const ledger = object(proof.ledger);
+  const actions = Array.isArray(ledger.actions) ? ledger.actions : [];
+  return actions.map((item) => object(item)).find((action) => action.id === actionId) || null;
 }
 
 export default async function ClaimPage({ params }: { params: Promise<{ id: string }> }) {
