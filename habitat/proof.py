@@ -36,15 +36,19 @@ def build_proof(store: Any, claim_id: str) -> dict[str, Any]:
     """Build a portable proof bundle for one stored claim.
 
     The bundle is deterministic except for ``generated_at``. The hash covers
-    every field except that timestamp so the same observed evidence produces
-    the same content digest.
+    every field except that timestamp and the optional signature, so the same
+    observed evidence produces the same content digest whether or not a
+    signature is subsequently attached.
     """
-    claim = next((c for c in store.claims(10000) if c.id == claim_id), None)
+    claim = store.get_claim(claim_id)
     if claim is None:
         raise KeyError(f"Unknown claim: {claim_id}")
 
     integrity_ok = store.verify_action_integrity()
-    actions = [a for a in store.actions(10000) if not claim.run_id or a.run_id == claim.run_id]
+    if claim.run_id:
+        actions = store.actions_for_run(claim.run_id)
+    else:
+        actions = store.matching_actions(claim.habitat_id, claim.job_id, claim.action)
     actions = sorted(actions, key=lambda a: (a.timestamp, a.id))
 
     bundle: dict[str, Any] = {
