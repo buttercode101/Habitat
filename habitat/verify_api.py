@@ -1,13 +1,15 @@
 """Machine-consumable claim verification and portable proof responses."""
 from __future__ import annotations
+
 from typing import Any
+
 from .proof import build_proof
 from .verify import verify_claim
 
 
 def verify_and_prove(store: Any, claim_id: str) -> dict[str, Any]:
     """Re-verify a claim, then return its current verdict and proof bundle."""
-    claim = next((c for c in store.claims(10000) if c.id == claim_id), None)
+    claim = store.get_claim(claim_id)
     if claim is None:
         raise KeyError(f"Unknown claim: {claim_id}")
     claim = verify_claim(store, claim)
