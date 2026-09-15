@@ -12,10 +12,11 @@ import json
 from typing import Any
 
 from .schema import utcnow
+from .proof_verify import MAX_PROOF_ACTIONS, MAX_PROOF_BYTES
 
 
 def _canonical(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
 def _action_dict(action: Any) -> dict[str, Any]:
@@ -49,6 +50,8 @@ def build_proof(store: Any, claim_id: str) -> dict[str, Any]:
         actions = store.actions_for_run(claim.run_id)
     else:
         actions = store.matching_actions(claim.habitat_id, claim.job_id, claim.action)
+    if len(actions) > MAX_PROOF_ACTIONS:
+        raise ValueError(f"proof bundle exceeds maximum of {MAX_PROOF_ACTIONS} actions")
     actions = sorted(actions, key=lambda a: (a.timestamp, a.id))
 
     bundle: dict[str, Any] = {
@@ -75,13 +78,17 @@ def build_proof(store: Any, claim_id: str) -> dict[str, Any]:
     digest_input = dict(bundle)
     digest_input.pop("generated_at")
     bundle["content_sha256"] = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
+    if len(_canonical(bundle).encode("utf-8")) > MAX_PROOF_BYTES:
+        raise ValueError(f"proof bundle exceeds maximum size of {MAX_PROOF_BYTES} bytes")
     return bundle
 
 
 def export_proof(store: Any, claim_id: str, path: str) -> dict[str, Any]:
     """Write a proof bundle as UTF-8 JSON and return the bundle."""
     bundle = build_proof(store, claim_id)
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(bundle, handle, indent=2, ensure_ascii=False)
-        handle.write("\n")
+    raw = json.dumps(bundle, indent=2, ensure_ascii=False).encode("utf-8") + b"\n"
+    if len(raw) > MAX_PROOF_BYTES:
+        raise ValueError(f"proof bundle exceeds maximum size of {MAX_PROOF_BYTES} bytes")
+    with open(path, "wb") as handle:
+        handle.write(raw)
     return bundle
