@@ -1,10 +1,14 @@
+import hashlib
 import json
+from datetime import datetime, timezone
 
 import pytest
 
+from habitat.claims import Claim
 from habitat.events import ingest_event, signature_for
-from habitat.schema import Habitat, Job
+from habitat.schema import Action, Habitat, Job
 from habitat.store import PBKDF2_ITERATIONS, Store
+from habitat.verify import verify_claim
 
 
 def make(tmp_path):
@@ -29,8 +33,6 @@ def test_agent_secret_uses_salted_slow_hash(tmp_path):
 
 def test_legacy_sha256_agent_secret_is_upgraded_on_success(tmp_path):
     store = make(tmp_path)
-    import hashlib
-
     legacy = hashlib.sha256(b"legacy-secret").hexdigest()
     store.conn.execute(
         "INSERT INTO agent VALUES (?,?,?,?,?,?,?,?)",
@@ -49,4 +51,28 @@ def test_non_standard_json_numbers_are_rejected(tmp_path):
     body = b'{"id":"nan-1","type":"job.completed","habitat_id":"h","job_id":"j","run_id":NaN}'
     with pytest.raises(ValueError, match="invalid_json"):
         ingest_event(store, body, signature_for("secret", body), "secret")
+    store.close()
+
+
+def test_ambiguous_legacy_claim_never_selects_arbitrary_trusted_action(tmp_path):
+    store = make(tmp_path)
+    timestamp = datetime.now(timezone.utc)
+    store.save_action(Action("a1", "h", timestamp, "agent", "deploy", "ok", "j", {}, "run-1"))
+    store.save_action(Action("a2", "h", timestamp, "agent", "deploy", "ok", "j", {}, "run-2"))
+
+    class ExternalEvidence:
+        def observe(self, query):
+            return type("Evidence", (), {
+                "source": "external",
+                "observed": True,
+                "status": "ok",
+                "data": {"verified": True},
+                "error": None,
+            })()
+
+    claim = Claim.new("h", "deployment externally verified", job_id="j", action="deploy")
+    result = verify_claim(store, claim, ExternalEvidence(), "deployment")
+    assert result.status == "verified"
+    assert result.evidence["source"] == "external"
+    assert "action_id" not in result.evidence
     store.close()
