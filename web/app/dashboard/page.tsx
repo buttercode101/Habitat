@@ -1,5 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getClaims, getStatus, type Claim } from "../../lib/habitat";
+
+export const metadata: Metadata = {
+  title: "Habitat Dashboard",
+  robots: { index: false, follow: false },
+};
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to reach the Habitat backend";
