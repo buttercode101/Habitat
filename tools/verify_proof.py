@@ -57,8 +57,12 @@ def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
     if not isinstance(claim, dict):
         errors.append("claim must be an object")
     else:
-        if set(claim) != claim_required:
-            errors.append("claim has invalid fields")
+        unknown_claim = sorted(set(claim) - claim_required)
+        missing_claim = sorted(claim_required - set(claim))
+        if unknown_claim:
+            errors.append("claim contains unknown fields")
+        if missing_claim:
+            errors.append("claim is missing required fields")
         for field in ("id", "habitat_id", "claim", "expected_status", "status"):
             if not isinstance(claim.get(field), str):
                 errors.append(f"claim.{field} must be a string")
@@ -120,7 +124,6 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     structure_errors: list[str] = []
     _validate_structure(bundle, structure_errors)
     errors.extend(structure_errors)
-
     expected = bundle.get("content_sha256")
     actual = None
     if isinstance(expected, str):
@@ -147,7 +150,6 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
                     errors.append(f"ledger.actions[{index}] job_id does not match claim")
                 if claim.get("run_id") is not None and action.get("run_id") != claim.get("run_id"):
                     errors.append(f"ledger.actions[{index}] run_id does not match claim")
-
             evidence = claim.get("evidence")
             if isinstance(evidence, dict) and evidence.get("action_id") is not None:
                 action_id = evidence["action_id"]
@@ -166,7 +168,6 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     integrity = ledger.get("integrity") if isinstance(ledger, dict) else None
     if verdict == "verified" and integrity != "intact":
         errors.append("verified claim cannot have failed ledger integrity")
-
     signature = bundle.get("signature")
     signature_state = "absent" if signature is None else "present-unverified"
     relationship_valid = len(errors) == relationship_errors_before
@@ -179,14 +180,7 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         "errors": errors,
         "scope": "bundle-integrity-and-internal-consistency",
         "authenticity": "not-established",
-        "assurance": {
-            "structural_validity": not structure_errors,
-            "content_integrity": content_valid,
-            "internal_consistency": relationship_valid and not (verdict == "verified" and integrity != "intact"),
-            "signature": signature_state,
-            "publisher_trust": "not-assessed",
-            "external_truth": "not-established",
-        },
+        "assurance": {"structural_validity": not structure_errors, "content_integrity": content_valid, "internal_consistency": relationship_valid and not (verdict == "verified" and integrity != "intact"), "signature": signature_state, "publisher_trust": "not-assessed", "external_truth": "not-established"},
     }
 
 
