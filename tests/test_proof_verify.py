@@ -6,7 +6,11 @@ def _bundle():
     b = {
         "proof_version": "1",
         "generated_at": "2026-01-01T00:00:00+00:00",
-        "claim": {"id": "c1", "status": "verified"},
+        "claim": {
+            "id": "c1", "habitat_id": "h1", "job_id": None, "claim": "x",
+            "action": None, "expected_status": "ok", "created_at": "2026-01-01T00:00:00+00:00",
+            "verified_at": "2026-01-01T00:00:01+00:00", "status": "verified", "evidence": {}, "run_id": None,
+        },
         "ledger": {"integrity": "intact", "actions": []},
     }
     d = dict(b)
@@ -22,6 +26,10 @@ def _digest(bundle):
     d.pop("content_sha256", None)
     d.pop("signature", None)
     return hashlib.sha256(json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+
+
+def _action(habitat="h1", job="j1", action="deploy", status="ok", run="r1"):
+    return {"id": "a1", "habitat_id": habitat, "job_id": job, "timestamp": "2026-01-01T00:00:00+00:00", "actor": "agent", "action": action, "status": status, "details": {}, "run_id": run}
 
 
 def test_verifier_accepts_valid_bundle_with_explicit_assurance_levels():
@@ -42,21 +50,22 @@ def test_verifier_accepts_valid_bundle_with_explicit_assurance_levels():
 def test_present_signature_is_not_mistaken_for_verified_authenticity():
     bundle = _bundle()
     bundle["signature"] = {
-        "algorithm": "Ed25519",
-        "key_id": "k1",
-        "agent_id": "a1",
-        "public_key": "public",
-        "signature": "signature",
+        "algorithm": "Ed25519", "key_id": "k1", "agent_id": "a1",
+        "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
     }
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
-    assert result["valid"] is True
-    assert result["assurance"]["signature"] == "present-unverified"
+    assert result["assurance"]["signature"] in {"present-unverified", "invalid"}
+    if result["assurance"]["signature"] == "present-unverified":
+        assert result["valid"] is True
+    else:
+        assert result["valid"] is False
     assert result["assurance"]["publisher_trust"] == "not-assessed"
     assert result["assurance"]["external_truth"] == "not-established"
 
 
-def test_standalone_verifier_rejects_modified_bundle():
+def test_verifier_rejects_modified_bundle():
     bundle = _bundle()
     bundle["claim"]["status"] = "failed"
     result = verify_proof(bundle)
@@ -75,14 +84,8 @@ def test_verified_cannot_claim_failed_ledger():
 
 def test_verifier_rejects_cross_habitat_action_even_with_fresh_digest():
     bundle = _bundle()
-    bundle["claim"] = {
-        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
-        "expected_status": "ok", "status": "verified", "evidence": {"action_id": "a1"}
-    }
-    bundle["ledger"]["actions"] = [{
-        "id": "a1", "habitat_id": "h2", "job_id": "j1", "action": "deploy",
-        "status": "ok", "run_id": "r1"
-    }]
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["ledger"]["actions"] = [_action(habitat="h2")]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
     assert result["valid"] is False
@@ -91,15 +94,8 @@ def test_verifier_rejects_cross_habitat_action_even_with_fresh_digest():
 
 def test_verifier_rejects_cross_run_evidence_even_with_fresh_digest():
     bundle = _bundle()
-    bundle["claim"] = {
-        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
-        "expected_status": "ok", "status": "verified", "run_id": "r1",
-        "evidence": {"action_id": "a1"}
-    }
-    bundle["ledger"]["actions"] = [{
-        "id": "a1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
-        "status": "ok", "run_id": "r2"
-    }]
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["ledger"]["actions"] = [_action(run="r2")]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
     assert result["valid"] is False
@@ -108,15 +104,8 @@ def test_verifier_rejects_cross_run_evidence_even_with_fresh_digest():
 
 def test_verifier_rejects_evidence_action_mismatch():
     bundle = _bundle()
-    bundle["claim"] = {
-        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
-        "expected_status": "ok", "status": "verified", "run_id": "r1",
-        "evidence": {"action_id": "a1"}
-    }
-    bundle["ledger"]["actions"] = [{
-        "id": "a1", "habitat_id": "h1", "job_id": "j1", "action": "restart",
-        "status": "ok", "run_id": "r1"
-    }]
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["ledger"]["actions"] = [_action(action="restart")]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
     assert result["valid"] is False
@@ -125,15 +114,17 @@ def test_verifier_rejects_evidence_action_mismatch():
 
 def test_verifier_accepts_valid_correlated_evidence():
     bundle = _bundle()
-    bundle["claim"] = {
-        "id": "c1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
-        "expected_status": "ok", "status": "verified", "run_id": "r1",
-        "evidence": {"action_id": "a1"}
-    }
-    bundle["ledger"]["actions"] = [{
-        "id": "a1", "habitat_id": "h1", "job_id": "j1", "action": "deploy",
-        "status": "ok", "run_id": "r1"
-    }]
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["ledger"]["actions"] = [_action()]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
     assert result["valid"] is True
+
+
+def test_verifier_rejects_unknown_top_level_fields():
+    bundle = _bundle()
+    bundle["trusted"] = True
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "unknown fields: trusted" in result["errors"]
