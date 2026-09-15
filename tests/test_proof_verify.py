@@ -10,7 +10,8 @@ def _bundle():
         "claim": {
             "id": "c1", "habitat_id": "h1", "job_id": None, "claim": "x",
             "action": None, "expected_status": "ok", "created_at": "2026-01-01T00:00:00+00:00",
-            "verified_at": "2026-01-01T00:00:01+00:00", "status": "verified", "evidence": {}, "run_id": None,
+            "verified_at": "2026-01-01T00:00:01+00:00", "status": "verified",
+            "evidence": {"source": "external", "status": "ok", "data": {"verified": True}, "query": "x", "expected": {}}, "run_id": None,
         },
         "ledger": {"integrity": "intact", "actions": []},
     }
@@ -46,6 +47,24 @@ def test_verifier_accepts_valid_bundle_with_explicit_assurance_levels():
         "publisher_trust": "not-assessed",
         "external_truth": "not-established",
     }
+
+
+def test_verified_claim_requires_supporting_evidence():
+    bundle = _bundle()
+    bundle["claim"]["evidence"] = {}
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "verified claim must include evidence" in result["errors"]
+
+
+def test_verified_external_evidence_status_must_match_claim():
+    bundle = _bundle()
+    bundle["claim"]["evidence"]["status"] = "failed"
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "verified claim evidence status does not match claim.expected_status" in result["errors"]
 
 
 def test_present_signature_is_not_mistaken_for_verified_authenticity():
@@ -85,7 +104,7 @@ def test_verified_cannot_claim_failed_ledger():
 
 def test_verifier_rejects_cross_habitat_action_even_with_fresh_digest():
     bundle = _bundle()
-    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"source": "habitat_trusted_ledger", "status": "ok", "action_id": "a1"}})
     bundle["ledger"]["actions"] = [_action(habitat="h2")]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
@@ -95,7 +114,7 @@ def test_verifier_rejects_cross_habitat_action_even_with_fresh_digest():
 
 def test_verifier_rejects_cross_run_evidence_even_with_fresh_digest():
     bundle = _bundle()
-    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"source": "habitat_trusted_ledger", "status": "ok", "action_id": "a1"}})
     bundle["ledger"]["actions"] = [_action(run="r2")]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
@@ -105,7 +124,7 @@ def test_verifier_rejects_cross_run_evidence_even_with_fresh_digest():
 
 def test_verifier_rejects_evidence_action_mismatch():
     bundle = _bundle()
-    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"source": "habitat_trusted_ledger", "status": "ok", "action_id": "a1"}})
     bundle["ledger"]["actions"] = [_action(action="restart")]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
@@ -115,7 +134,7 @@ def test_verifier_rejects_evidence_action_mismatch():
 
 def test_verifier_accepts_valid_correlated_evidence():
     bundle = _bundle()
-    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"action_id": "a1"}})
+    bundle["claim"].update({"habitat_id": "h1", "job_id": "j1", "action": "deploy", "expected_status": "ok", "run_id": "r1", "evidence": {"source": "habitat_trusted_ledger", "status": "ok", "action_id": "a1"}})
     bundle["ledger"]["actions"] = [_action()]
     bundle["content_sha256"] = _digest(bundle)
     result = verify_proof(bundle)
