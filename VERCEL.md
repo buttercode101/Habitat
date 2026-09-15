@@ -2,7 +2,7 @@
 
 Habitat uses a two-layer deployment model. The persistent Python Habitat service remains the source of truth for SQLite, the ledger, policy evaluation, events, agents, claims and proof generation. Vercel hosts the public inspection UI and a small server-side proxy that keeps the Habitat bearer token off the browser.
 
-Vercel supports Next.js and Python serverless functions, but Habitat's existing SQLite-backed HTTP service is intentionally not moved into a serverless function. Vercel deployments are immutable/ephemeral at runtime, so the durable Habitat process belongs on a persistent service. citeturn0search12
+The existing SQLite-backed HTTP service is intentionally not moved into a Vercel serverless function. Vercel is the presentation/API edge; the durable Habitat process belongs on a persistent service.
 
 ## Vercel project
 
@@ -18,7 +18,7 @@ When importing `buttercode101/Habitat` from Git:
 6. Do **not** prefix the token with `NEXT_PUBLIC_`.
 7. Deploy.
 
-The current web package tracks the current Next.js 16.3.x line rather than the older 15.5.7 release. Next.js published an August 2026 security release and recommends upgrading 15.5.x users to 15.5.24 or moving to the current 16.3.x line. citeturn1search0turn1search1
+The web package uses the current Next.js 16.3.x line. Do not pin the new Vercel surface back to the older 15.5.7 package that was initially scaffolded.
 
 ## Habitat backend
 
