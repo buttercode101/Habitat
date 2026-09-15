@@ -7,11 +7,13 @@ core domain model.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import ipaddress
 import json
 import os
 from pathlib import Path
 import re
 import shlex
+import socket
 import subprocess
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
@@ -40,6 +42,24 @@ def _validate_http_url(url: str) -> None:
         raise ValueError("evidence_url_missing_host")
     if parsed.username is not None or parsed.password is not None:
         raise ValueError("evidence_url_credentials_not_allowed")
+
+    # Evidence URLs are configuration, but a compromised/untrusted configuration
+    # must not turn the adapter into an easy SSRF primitive. Resolve every address
+    # before opening the URL and reject any hostname that can resolve to a local,
+    # private, link-local, loopback, multicast, reserved, or unspecified address.
+    try:
+        addresses = {item[4][0] for item in socket.getaddrinfo(parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80), type=socket.SOCK_STREAM)}
+    except socket.gaierror as exc:
+        raise ValueError("evidence_url_host_unresolvable") from exc
+    if not addresses:
+        raise ValueError("evidence_url_host_unresolvable")
+    for address in addresses:
+        try:
+            ip = ipaddress.ip_address(address)
+        except ValueError as exc:
+            raise ValueError("evidence_url_invalid_address") from exc
+        if not ip.is_global:
+            raise ValueError("evidence_url_private_address")
 
 
 def _read_limited(response) -> bytes:
