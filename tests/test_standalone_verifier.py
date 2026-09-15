@@ -1,3 +1,4 @@
+import hashlib
 import json
 import subprocess
 import sys
@@ -11,8 +12,6 @@ STANDALONE = ROOT / "tools" / "verify_proof.py"
 
 
 def _bundle():
-    import hashlib
-
     bundle = {
         "proof_version": "1",
         "generated_at": "2026-01-01T00:00:00+00:00",
@@ -67,6 +66,23 @@ def test_standalone_matches_canonical_on_valid_bundle(tmp_path):
 
     assert code == 0
     assert standalone == canonical
+
+
+def test_standalone_matches_canonical_on_signed_bundle(tmp_path):
+    bundle = _bundle()
+    bundle["signature"] = {
+        "algorithm": "Ed25519",
+        "key_id": "k1",
+        "agent_id": "a1",
+        "public_key": "public",
+        "signature": "signature",
+    }
+    canonical = verify_proof(bundle)
+    code, standalone = _run_standalone(bundle, tmp_path)
+
+    assert code == 0
+    assert standalone == canonical
+    assert standalone["assurance"]["signature"] == "present-unverified"
 
 
 def test_standalone_matches_canonical_on_tampered_bundle(tmp_path):
