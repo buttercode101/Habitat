@@ -77,11 +77,22 @@ Observability products are primarily optimized to answer:
 - How much did it cost?
 - Which prompt/model/tool was involved?
 
-Habitat adds a narrower question:
+Agent governance products increasingly add runtime policy, identity and audit controls. Separate provenance projects are also converging on signed, tamper-evident or replayable evidence. Habitat therefore **must not claim that hashes, signatures, audit trails or portable JSON are unique features**.
 
-- **What evidence supports the claim that this action happened, under this run and identity, and does that evidence satisfy the configured verification policy?**
+Habitat's narrower target is the boundary between those systems:
 
-Habitat is therefore complementary to tools such as LangSmith, Langfuse, Arize Phoenix, AgentOps, and other OTel-compatible observability systems rather than trying to out-feature them.
+- **What evidence supports this particular claim?**
+- **Was that evidence tied to the right habitat, job and run?**
+- **Did the evidence satisfy the configured verification policy?**
+- **Can another party independently inspect the resulting proof without access to the producer's runtime?**
+
+Habitat is therefore complementary to observability systems such as LangSmith, Langfuse, Arize Phoenix and AgentOps, and should remain interoperable with emerging agent identity and provenance standards rather than trying to replace them.
+
+## Competitive reality check
+
+The market has moved quickly. OpenTelemetry's GenAI work is becoming a common telemetry layer, while agent governance and evidence projects are appearing across identity, runtime enforcement and provenance. The detailed September 2026 assessment is maintained in `COMPETITIVE_INTELLIGENCE.md`.
+
+This changes the bar for Habitat: **being a portable proof generator is not enough.** The protocol must make verification materially simpler, clearer and more interoperable than the alternatives while staying smaller and less invasive.
 
 ## Adoption rule
 
