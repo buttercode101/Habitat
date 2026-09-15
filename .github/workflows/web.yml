@@ -33,5 +33,7 @@ jobs:
           package-manager-cache: false
       - name: Install dependencies
         run: npm install
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
       - name: Build Vercel surface
         run: npm run build

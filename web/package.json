@@ -2,6 +2,9 @@
   "name": "habitat-web",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": ">=20.9.0 <25"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
