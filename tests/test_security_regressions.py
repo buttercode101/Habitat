@@ -76,3 +76,14 @@ def test_ambiguous_legacy_claim_never_selects_arbitrary_trusted_action(tmp_path)
     assert result.evidence["source"] == "external"
     assert "action_id" not in result.evidence
     store.close()
+
+
+def test_uncorrelated_claim_cannot_verify_from_unrelated_action(tmp_path):
+    store = make(tmp_path)
+    timestamp = datetime.now(timezone.utc)
+    store.save_action(Action("a1", "h", timestamp, "agent", "deploy", "ok", "j", {}, "run-1"))
+    claim = Claim.new("h", "some unrelated assertion")
+    result = verify_claim(store, claim)
+    assert result.status == "rejected"
+    assert result.evidence["reason"] == "claim_requires_correlation_or_external_evidence"
+    store.close()
