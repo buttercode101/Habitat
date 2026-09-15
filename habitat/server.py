@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 from .events import ingest_event, MAX_EVENT_BYTES
 from .store import Store
 from .generate import render_dashboard, render_landing
+from .proof_ui import render_proof_inspector
 from .verify_api import proof_status, verify_and_prove
 
 MAX_HTTP_CONNECTIONS = 64
@@ -199,6 +200,22 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
                     self.send_header("Referrer-Policy", "no-referrer")
                     self.end_headers()
                     self.wfile.write(raw)
+                elif path.startswith("/dashboard/claims/"):
+                    claim_id = path[len("/dashboard/claims/"):].strip("/")
+                    if not claim_id or "/" in claim_id:
+                        self._send(400, {"error": "invalid_claim_id"})
+                    else:
+                        html = render_proof_inspector(proof_status(s, claim_id), s.habitat().name)
+                        raw = html.encode("utf-8")
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/html; charset=utf-8")
+                        self.send_header("Content-Length", str(len(raw)))
+                        self.send_header("Cache-Control", "no-store")
+                        self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'")
+                        self.send_header("X-Content-Type-Options", "nosniff")
+                        self.send_header("Referrer-Policy", "no-referrer")
+                        self.end_headers()
+                        self.wfile.write(raw)
                 elif path == "/v1/status":
                     h = s.habitat()
                     self._send(200, {"id": h.id, "name": h.name, "status": h.status, "model": h.model, "jobs": len(s.jobs()), "active_signals": len(s.active_signals()), "agents": len(s.agents())})
