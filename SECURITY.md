@@ -21,6 +21,7 @@ The action ledger is **tamper-evident**: each recorded action is chained to the 
 - Trusted action verification includes an integrity-chain check.
 - Portable proof verification rejects non-finite JSON numbers, timezone-less timestamps, proofs larger than 16 MiB, or ledgers containing more than 10,000 actions.
 - HTTP evidence adapters accept only HTTP(S), reject redirects, reject URL credentials, and bound response bodies to 1 MiB.
+- Remote server and agent authentication failures are throttled to reduce brute-force and CPU-exhaustion attacks; localhost remains unthrottled.
 
 ## Secrets
 
@@ -39,6 +40,7 @@ The generated agent secret is displayed once by `agent-add`; store it securely a
 | Forged event | HMAC signature |
 | Duplicate event after first receipt | Persistent event ID + payload conflict detection |
 | Unauthorized agent | Agent identity + permission check + per-agent secret |
+| Authentication brute force / PBKDF2 CPU exhaustion | Remote failure throttle; localhost is intentionally trusted local access |
 | Stale claim | Run/correlation binding |
 | Ambiguous trusted action attribution | Run ID required when more than one correlated action exists |
 | Tampered trusted action | Chained action-integrity digest |
@@ -71,6 +73,8 @@ For a shared or remote deployment:
 8. Treat job commands as privileged configuration.
 9. Monitor disk space and log output.
 10. Treat exported proof bundles as potentially sensitive because action details and event payloads may contain operational data.
+
+Remote authentication throttling is deliberately in-process and keyed by client address. It is a defense-in-depth control, not a substitute for a reverse proxy, firewall, rate-limiting gateway, or account lockout policy in hostile public deployments.
 
 ## Incident response
 
