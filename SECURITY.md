@@ -19,6 +19,8 @@ The action ledger is **tamper-evident**: each recorded action is chained to the 
 - Network claims tied to jobs require a run/correlation ID.
 - SQLite is opened with foreign keys and WAL mode.
 - Trusted action verification includes an integrity-chain check.
+- Portable proof verification rejects non-finite JSON numbers, timezone-less timestamps, proofs larger than 16 MiB, or ledgers containing more than 10,000 actions.
+- HTTP evidence adapters accept only HTTP(S), reject redirects, reject URL credentials, and bound response bodies to 1 MiB.
 
 ## Secrets
 
@@ -38,11 +40,14 @@ The generated agent secret is displayed once by `agent-add`; store it securely a
 | Duplicate event after first receipt | Persistent event ID + payload conflict detection |
 | Unauthorized agent | Agent identity + permission check + per-agent secret |
 | Stale claim | Run/correlation binding |
+| Ambiguous trusted action attribution | Run ID required when more than one correlated action exists |
 | Tampered trusted action | Chained action-integrity digest |
 | Oversized request | 256 KiB limit |
+| Oversized portable proof | 16 MiB file limit + 10,000-action limit |
 | Non-standard JSON numbers | Strict JSON constant rejection |
 | Malformed payload | Structural validation |
 | Arbitrary shell interpretation | `ShellAdapter` uses argv parsing by default |
+| Evidence redirect / oversized response | Redirect rejection + 1 MiB response bound |
 | Database upgrade breakage | Schema version metadata + backup workflow |
 | Evidence mismatch | Typed expected fields / status |
 
