@@ -1,11 +1,13 @@
 """Small trust registry for signed proof verification.
 
-The registry is deliberately explicit: a valid Ed25519 signature is not treated
-as trusted until its key ID and public key are present in the caller's registry.
+A valid Ed25519 signature is not treated as trusted until its key ID and public
+key are present in the caller's registry. An embedded agent ID is only trusted
+when the registry explicitly binds that key to the same agent.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Iterable
 
 from .proof_sign import verify_signed_proof
@@ -39,10 +41,21 @@ class TrustRegistry:
         key = self._keys.get(key_id)
         if not key or not key.enabled or key.public_key != public_key:
             return False
-        if key.agent_id is not None and key.agent_id != agent_id:
+        # If a caller wants attribution to an agent, the trust anchor must bind
+        # that key to the same agent. An unbound key authenticates only the key,
+        # not an arbitrary identity string carried by the proof.
+        if key.agent_id is None:
+            if agent_id is not None:
+                return False
+        elif key.agent_id != agent_id:
             return False
-        current = now or datetime.now().astimezone()
-        return key.expires_at is None or current < key.expires_at
+        current = now or datetime.now(timezone.utc)
+        expiry = key.expires_at
+        if expiry is None:
+            return True
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        return current < expiry
 
     def verify(self, bundle: dict, now: datetime | None = None, agent_id: str | None = None) -> bool:
         signature = bundle.get("signature")
@@ -51,7 +64,12 @@ class TrustRegistry:
         key_id = signature.get("key_id")
         public_key = signature.get("public_key")
         signed_agent = signature.get("agent_id")
-        expected_agent = agent_id or signed_agent
         if agent_id is not None and signed_agent != agent_id:
+            return False
+        # A proof that carries an agent identity must have that identity bound by
+        # the trust anchor; otherwise the identity would be unauthenticated
+        # metadata even though the signature itself is valid.
+        expected_agent = agent_id if agent_id is not None else signed_agent
+        if signed_agent is not None and expected_agent is None:
             return False
         return bool(key_id and public_key and self.is_trusted(key_id, public_key, now, expected_agent) and verify_signed_proof(bundle))
