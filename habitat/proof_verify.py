@@ -17,7 +17,7 @@ def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
-def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> bool:
+def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> None:
     required = {"proof_version", "claim", "ledger", "content_sha256"}
     missing = sorted(required - set(bundle))
     if missing:
@@ -50,8 +50,6 @@ def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> bool:
                 errors.append(f"signature.{field} is required")
     elif "signature" in bundle:
         errors.append("signature must be an object")
-
-    return not errors
 
 
 def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], errors: list[str]) -> None:
@@ -106,9 +104,10 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     if isinstance(expected, str):
         digest_input = dict(bundle)
         digest_input.pop("generated_at", None)
-        # The digest authenticates the bundle contents, excluding the digest
-        # field itself to avoid a circular hash.
         digest_input.pop("content_sha256", None)
+        # Signatures authenticate this digest but are excluded from it, so
+        # adding/removing the optional signature does not rewrite proof content.
+        digest_input.pop("signature", None)
         actual = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
         if actual != expected:
             errors.append("content_sha256 mismatch")
