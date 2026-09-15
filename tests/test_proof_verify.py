@@ -1,4 +1,5 @@
-from habitat.proof_verify import MAX_PROOF_ACTIONS, verify_proof
+from habitat.proof import build_proof
+from habitat.proof_verify import MAX_PROOF_ACTIONS, MAX_PROOF_BYTES, verify_proof
 
 
 def _bundle():
@@ -155,3 +156,47 @@ def test_verifier_bounds_action_count():
     result = verify_proof(bundle)
     assert result["valid"] is False
     assert f"ledger.actions exceeds maximum of {MAX_PROOF_ACTIONS}" in result["errors"]
+
+
+def test_builder_rejects_too_many_actions():
+    class Claim:
+        id = "c1"
+        habitat_id = "h1"
+        job_id = "j1"
+        claim = "x"
+        action = "deploy"
+        expected_status = "ok"
+        created_at = __import__("datetime").datetime(2026, 1, 1, tzinfo=__import__("datetime").timezone.utc)
+        verified_at = created_at
+        status = "verified"
+        evidence = {}
+        run_id = "r1"
+
+    class Store:
+        def get_claim(self, claim_id):
+            return Claim()
+        def verify_action_integrity(self):
+            return True
+        def actions_for_run(self, run_id):
+            return [_Action() for _ in range(MAX_PROOF_ACTIONS + 1)]
+        def matching_actions(self, *args):
+            return []
+
+    class _Action:
+        id = "a1"
+        habitat_id = "h1"
+        job_id = "j1"
+        timestamp = __import__("datetime").datetime(2026, 1, 1, tzinfo=__import__("datetime").timezone.utc)
+        actor = "agent"
+        action = "deploy"
+        status = "ok"
+        details = {}
+        run_id = "r1"
+
+    import pytest
+    with pytest.raises(ValueError, match="maximum of"):
+        build_proof(Store(), "c1")
+
+
+def test_proof_size_limit_is_shared_with_verifier():
+    assert MAX_PROOF_BYTES == 16 * 1024 * 1024
