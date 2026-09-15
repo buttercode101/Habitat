@@ -103,12 +103,11 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
         def _send_rate_limited(self):
             self._send(429, {"error": "authentication_rate_limited"}, headers={"Retry-After": "60"})
 
-        def _authorized_read(self) -> bool:
+        def _authorized_read(self):
             if not self._remote_protected():
                 return True
             if self._auth_throttled("server"):
-                self._send_rate_limited()
-                return False
+                return None
             supplied = self.headers.get("Authorization", "")
             if not secret or not supplied.startswith("Bearer "):
                 self._auth_failed("server")
@@ -137,7 +136,11 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             self._send(401, {"error": "authentication_required"})
 
         def do_GET(self):
-            if not self._authorized_read():
+            authorized = self._authorized_read()
+            if authorized is None:
+                self._send_rate_limited()
+                return
+            if not authorized:
                 self._send_forbidden()
                 return
             path = urlparse(self.path).path
@@ -195,9 +198,14 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             if urlparse(self.path).path != "/v1/events":
                 self._send(404, {"error": "not_found"})
                 return
-            if self._remote_protected() and not self._authorized_read():
-                self._send_forbidden()
-                return
+            if self._remote_protected():
+                authorized = self._authorized_read()
+                if authorized is None:
+                    self._send_rate_limited()
+                    return
+                if not authorized:
+                    self._send_forbidden()
+                    return
             if self._remote_protected() and self._auth_throttled("agent"):
                 self._send_rate_limited()
                 return
