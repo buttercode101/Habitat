@@ -1,4 +1,4 @@
-from habitat.proof_verify import verify_proof
+from habitat.proof_verify import MAX_PROOF_ACTIONS, verify_proof
 
 
 def _bundle():
@@ -128,3 +128,30 @@ def test_verifier_rejects_unknown_top_level_fields():
     result = verify_proof(bundle)
     assert result["valid"] is False
     assert "unknown fields: trusted" in result["errors"]
+
+
+def test_verifier_rejects_naive_datetime():
+    bundle = _bundle()
+    bundle["generated_at"] = "2026-01-01T00:00:00"
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "generated_at must be an ISO-8601 date-time with timezone" in result["errors"]
+
+
+def test_verifier_rejects_non_finite_number():
+    bundle = _bundle()
+    bundle["claim"]["evidence"] = {"value": float("nan")}
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert "non-finite JSON numbers are not allowed" in result["errors"]
+
+
+def test_verifier_bounds_action_count():
+    bundle = _bundle()
+    action = _action()
+    bundle["ledger"]["actions"] = [dict(action, id=f"a{i}") for i in range(MAX_PROOF_ACTIONS + 1)]
+    bundle["content_sha256"] = _digest(bundle)
+    result = verify_proof(bundle)
+    assert result["valid"] is False
+    assert f"ledger.actions exceeds maximum of {MAX_PROOF_ACTIONS}" in result["errors"]
