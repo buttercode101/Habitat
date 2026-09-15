@@ -20,10 +20,11 @@ def _digest(bundle):
     d = dict(bundle)
     d.pop("generated_at", None)
     d.pop("content_sha256", None)
+    d.pop("signature", None)
     return hashlib.sha256(json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 
 
-def test_standalone_verifier_accepts_valid_bundle():
+def test_verifier_accepts_valid_bundle_with_explicit_assurance_levels():
     result = verify_proof(_bundle())
     assert result["valid"] is True
     assert result["verdict"] == "verified"
@@ -52,7 +53,7 @@ def test_present_signature_is_not_mistaken_for_verified_authenticity():
     assert result["valid"] is True
     assert result["assurance"]["signature"] == "present-unverified"
     assert result["assurance"]["publisher_trust"] == "not-assessed"
-    assert result["external_truth"] if "external_truth" in result else True
+    assert result["assurance"]["external_truth"] == "not-established"
 
 
 def test_standalone_verifier_rejects_modified_bundle():
