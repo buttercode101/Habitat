@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import secrets
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
@@ -14,6 +15,7 @@ from .claims import Claim
 from .schema import Action, Habitat, Job, Signal
 
 SCHEMA_VERSION = 3
+PBKDF2_ITERATIONS = 600_000
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS habitat (id TEXT PRIMARY KEY, name TEXT NOT NULL, model TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, status TEXT NOT NULL);
@@ -100,6 +102,10 @@ class Store:
             digest = self._action_hash(a, prev)
             self.conn.execute("INSERT INTO action_integrity(action_id,prev_hash,hash) VALUES(?,?,?)", (a.id, prev, digest))
             prev = digest
+
+    def close_and_commit(self):
+        self.conn.commit()
+        self.close()
 
     def save_habitat(self, h):
         self.conn.execute("INSERT OR REPLACE INTO habitat VALUES (?,?,?,?,?,?)", (h.id, h.name, h.model, h.created_at.isoformat(), h.updated_at.isoformat(), h.status))
@@ -193,7 +199,7 @@ class Store:
                 if not same:
                     raise ValueError("event_id_conflict")
                 return False
-            cur = self.conn.execute("INSERT INTO event VALUES (?,?,?,?,?,?,?,?)", (event_id, habitat_id, event_type, received_at, int(signature_valid), json.dumps(payload, sort_keys=True), payload.get("correlation_id") or payload.get("run_id"), agent_id))
+            cur = self.conn.execute("INSERT INTO event VALUES (?,?,?,?,?,?,?,?)", (event_id, habitat_id, event_type, received_at, int(signature_valid), json.dumps(payload, sort_keys=True, allow_nan=False), payload.get("correlation_id") or payload.get("run_id"), agent_id))
             if outer:
                 self.conn.commit()
             return cur.rowcount == 1
@@ -210,7 +216,35 @@ class Store:
 
     @staticmethod
     def hash_secret(secret):
-        return hashlib.sha256(secret.encode()).hexdigest()
+        """Return a versioned, salted password-style hash for agent secrets."""
+        if not isinstance(secret, str) or not secret:
+            raise ValueError("agent secret must be non-empty")
+        salt = secrets.token_bytes(16)
+        digest = hashlib.pbkdf2_hmac("sha256", secret.encode("utf-8"), salt, PBKDF2_ITERATIONS)
+        return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt.hex()}${digest.hex()}"
+
+    @staticmethod
+    def _verify_secret(secret, stored):
+        if not isinstance(secret, str) or not stored:
+            return False, False
+        if stored.startswith("pbkdf2_sha256$"):
+            try:
+                algorithm, iterations_raw, salt_hex, digest_hex = stored.split("$", 3)
+                iterations = int(iterations_raw)
+                if algorithm != "pbkdf2_sha256" or iterations < 100_000 or iterations > 2_000_000:
+                    return False, False
+                salt = bytes.fromhex(salt_hex)
+                expected = bytes.fromhex(digest_hex)
+                candidate = hashlib.pbkdf2_hmac("sha256", secret.encode("utf-8"), salt, iterations)
+                return hmac.compare_digest(candidate, expected), False
+            except (TypeError, ValueError):
+                return False, False
+        # Backward-compatible verification for databases created before the
+        # hardened format. Successful legacy authentication is upgraded in place.
+        if len(stored) == 64:
+            candidate = hashlib.sha256(secret.encode("utf-8")).hexdigest()
+            return hmac.compare_digest(candidate, stored), True
+        return False, False
 
     def save_agent(self, agent_id, habitat_id, name, enabled=True, permissions=None, secret=None):
         self.conn.execute("INSERT OR REPLACE INTO agent VALUES (?,?,?,?,?,?,?,?)", (agent_id, habitat_id, name, int(enabled), json.dumps(sorted(permissions or [])), self.hash_secret(secret) if secret else None, datetime.now().astimezone().isoformat(), None))
@@ -229,9 +263,11 @@ class Store:
             return False
         if not r["secret_hash"]:
             return False
-        candidate = self.hash_secret(secret or "")
-        if not hmac.compare_digest(candidate, r["secret_hash"]):
+        valid, legacy = self._verify_secret(secret, r["secret_hash"])
+        if not valid:
             return False
+        if legacy:
+            self.conn.execute("UPDATE agent SET secret_hash=? WHERE id=?", (self.hash_secret(secret), agent_id))
         self.conn.execute("UPDATE agent SET last_seen_at=? WHERE id=?", (datetime.now().astimezone().isoformat(), agent_id))
         if self._transaction_depth == 0:
             self.conn.commit()
