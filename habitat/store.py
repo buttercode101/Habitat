@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -42,9 +43,30 @@ class Store:
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=10000")
         self.conn.executescript(SCHEMA)
         self._migrate()
         self.conn.commit()
+
+    @contextmanager
+    def transaction(self, immediate=False):
+        """Run a group of writes atomically.
+
+        Nested callers reuse the surrounding transaction. Immediate mode takes
+        the SQLite write lock before reading a value that will become part of an
+        integrity chain, preventing concurrent writers from forking it.
+        """
+        outer = self.conn.in_transaction
+        if not outer:
+            self.conn.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
+        try:
+            yield self
+            if not outer:
+                self.conn.commit()
+        except Exception:
+            if not outer:
+                self.conn.rollback()
+            raise
 
     def _migrate(self):
         cols = {r[1] for r in self.conn.execute("PRAGMA table_info(event)")}
@@ -82,30 +104,34 @@ class Store:
 
     def save_habitat(self, h):
         self.conn.execute("INSERT OR REPLACE INTO habitat VALUES (?,?,?,?,?,?)", (h.id, h.name, h.model, h.created_at.isoformat(), h.updated_at.isoformat(), h.status))
-        self.conn.commit()
+        if not self.conn.in_transaction:
+            self.conn.commit()
 
     def save_job(self, j):
         self.conn.execute("INSERT OR REPLACE INTO job VALUES (?,?,?,?,?,?,?,?,?,?)", (j.id, j.habitat_id, j.name, j.schedule, int(j.enabled), j.command, j.last_run_at.isoformat() if j.last_run_at else None, j.last_status, j.failure_streak, j.last_error))
-        self.conn.commit()
+        if not self.conn.in_transaction:
+            self.conn.commit()
 
     def save_signal(self, s):
         self.conn.execute("INSERT OR REPLACE INTO signal VALUES (?,?,?,?,?,?,?,?,?,?)", (s.id, s.habitat_id, s.job_id, s.type, s.severity, s.code, s.message, s.detected_at.isoformat(), s.resolved_at.isoformat() if s.resolved_at else None, json.dumps(s.data)))
-        self.conn.commit()
+        if not self.conn.in_transaction:
+            self.conn.commit()
 
     def save_action(self, a):
-        # The hash-chain head must be selected and appended under the same write
-        # lock. Without this, concurrent writers can both observe the same head
-        # and create a fork that later fails integrity verification.
-        self.conn.execute("BEGIN IMMEDIATE")
+        outer = self.conn.in_transaction
+        if not outer:
+            self.conn.execute("BEGIN IMMEDIATE")
         try:
             prev = self.conn.execute("SELECT hash FROM action_integrity ORDER BY seq DESC LIMIT 1").fetchone()
             prev_hash = prev[0] if prev else None
             digest = self._action_hash(a, prev_hash)
             self.conn.execute("INSERT INTO action VALUES (?,?,?,?,?,?,?,?,?)", (a.id, a.habitat_id, a.job_id, a.timestamp.isoformat(), a.actor, a.action, a.status, json.dumps(a.details), a.run_id))
             self.conn.execute("INSERT INTO action_integrity(action_id,prev_hash,hash) VALUES(?,?,?)", (a.id, prev_hash, digest))
-            self.conn.commit()
+            if not outer:
+                self.conn.commit()
         except Exception:
-            self.conn.rollback()
+            if not outer:
+                self.conn.rollback()
             raise
 
     def habitat(self):
@@ -152,26 +178,32 @@ class Store:
 
     def save_claim(self, c):
         self.conn.execute("INSERT OR REPLACE INTO claim VALUES (?,?,?,?,?,?,?,?,?,?,?)", (c.id, c.habitat_id, c.job_id, c.claim, c.action, c.expected_status, c.created_at.isoformat(), c.verified_at.isoformat() if c.verified_at else None, c.status, json.dumps(c.evidence), c.run_id))
-        self.conn.commit()
+        if not self.conn.in_transaction:
+            self.conn.commit()
 
     def claims(self, limit=100):
         return [Claim(r["id"], r["habitat_id"], r["job_id"], r["claim"], r["action"], r["expected_status"], _dt(r["created_at"]), _dt(r["verified_at"]), r["status"], json.loads(r["evidence"]), r["run_id"]) for r in self.conn.execute("SELECT * FROM claim ORDER BY created_at DESC LIMIT ?", (limit,))]
 
     def save_event(self, event_id, habitat_id, event_type, received_at, signature_valid, payload, agent_id=None):
-        self.conn.execute("BEGIN IMMEDIATE")
+        outer = self.conn.in_transaction
+        if not outer:
+            self.conn.execute("BEGIN IMMEDIATE")
         try:
             existing = self.conn.execute("SELECT habitat_id,type,payload,agent_id FROM event WHERE id=?", (event_id,)).fetchone()
             if existing:
                 same = existing["habitat_id"] == habitat_id and existing["type"] == event_type and json.loads(existing["payload"]) == payload and existing["agent_id"] == agent_id
-                self.conn.commit()
+                if not outer:
+                    self.conn.commit()
                 if not same:
                     raise ValueError("event_id_conflict")
                 return False
             cur = self.conn.execute("INSERT INTO event VALUES (?,?,?,?,?,?,?,?)", (event_id, habitat_id, event_type, received_at, int(signature_valid), json.dumps(payload, sort_keys=True), payload.get("correlation_id") or payload.get("run_id"), agent_id))
-            self.conn.commit()
+            if not outer:
+                self.conn.commit()
             return cur.rowcount == 1
         except Exception:
-            self.conn.rollback()
+            if not outer:
+                self.conn.rollback()
             raise
 
     def events(self, limit=100):
@@ -186,7 +218,8 @@ class Store:
 
     def save_agent(self, agent_id, habitat_id, name, enabled=True, permissions=None, secret=None):
         self.conn.execute("INSERT OR REPLACE INTO agent VALUES (?,?,?,?,?,?,?,?)", (agent_id, habitat_id, name, int(enabled), json.dumps(sorted(permissions or [])), self.hash_secret(secret) if secret else None, datetime.now().astimezone().isoformat(), None))
-        self.conn.commit()
+        if not self.conn.in_transaction:
+            self.conn.commit()
 
     def agents(self):
         return [{"id": r["id"], "habitat_id": r["habitat_id"], "name": r["name"], "enabled": bool(r["enabled"]), "permissions": json.loads(r["permissions"]), "created_at": r["created_at"], "last_seen_at": r["last_seen_at"]} for r in self.conn.execute("SELECT * FROM agent ORDER BY name")]
@@ -204,7 +237,8 @@ class Store:
         if not hmac.compare_digest(candidate, r["secret_hash"]):
             return False
         self.conn.execute("UPDATE agent SET last_seen_at=? WHERE id=?", (datetime.now().astimezone().isoformat(), agent_id))
-        self.conn.commit()
+        if not self.conn.in_transaction:
+            self.conn.commit()
         return True
 
     def verify_action_integrity(self):
