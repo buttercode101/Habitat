@@ -17,7 +17,7 @@ def _page(title: str, body: str, *, extra_css: str = "") -> str:
 <meta name="description" content="Habitat — local-first supervision and portable evidence for autonomous agents.">
 <title>{escape(title)}</title>
 <style>
-:root {{ --bg:#090a0c; --surface:#101216; --surface-2:#15171c; --text:#f4f5f7; --muted:#9298a4; --line:#272b33; --accent:#d8ff63; --danger:#ff6b6b; --warn:#f5c451; --ok:#67e8a5; }}
+:root {{ --bg:#090a0c; --surface:#101216; --text:#f4f5f7; --muted:#9298a4; --line:#272b33; --accent:#d8ff63; --danger:#ff6b6b; --warn:#f5c451; --ok:#67e8a5; }}
 * {{ box-sizing:border-box; }}
 html {{ scroll-behavior:smooth; }}
 body {{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.55; }}
@@ -58,7 +58,7 @@ footer {{ border-top:1px solid var(--line); padding:28px 0 44px; color:var(--mut
 .dashhead h1 {{ font-size:30px; letter-spacing:-.04em; margin:0 0 4px; }} .dashsub {{ color:var(--muted); font-size:13px; }}
 .kpis {{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }}
 .kpi,.panel {{ border:1px solid var(--line); background:var(--surface); border-radius:12px; }}
-.kpi {{ padding:18px; }} .kpi .value {{ font-size:30px; font-weight:720; letter-spacing:-.04em; }} .kpi .label {{ color:var(--muted); font-size:12px; margin-top:3px; }}
+.kpi {{ padding:18px; }} .kpi .value {{ font-size:30px; font-weight:720; letter-spacing:-.04em; }} .kpi .value small {{ color:var(--muted); font-size:14px; font-weight:500; }} .kpi .label {{ color:var(--muted); font-size:12px; margin-top:3px; }}
 .panel {{ padding:20px; margin-bottom:12px; }} .panel h2 {{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin:0 0 14px; }}
 .panel.attention {{ border-color:#54302f; }} .panel.calm {{ border-color:#244735; }}
 .signal {{ display:flex; gap:10px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); }} .signal:last-child {{ border:0; }}
@@ -142,4 +142,3 @@ def write_dashboard(html: str, path: str | Path) -> Path:
     p = Path(path)
     p.write_text(html, encoding="utf-8")
     return p
-'''}
