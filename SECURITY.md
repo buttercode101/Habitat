@@ -20,7 +20,7 @@ The action ledger is **tamper-evident**: each recorded action is chained to the 
 - SQLite is opened with foreign keys and WAL mode.
 - Trusted action verification includes an integrity-chain check.
 - Portable proof verification rejects non-finite JSON numbers, timezone-less timestamps, proofs larger than 16 MiB, or ledgers containing more than 10,000 actions.
-- HTTP evidence adapters accept only HTTP(S), reject redirects, reject URL credentials, and bound response bodies to 1 MiB.
+- HTTP evidence adapters accept only HTTP(S), reject redirects and URL credentials, resolve every target address before connecting, reject non-global/private/link-local/loopback/reserved addresses, and bound response bodies to 1 MiB.
 - Remote server and agent authentication failures are throttled to reduce brute-force and CPU-exhaustion attacks; localhost remains unthrottled.
 
 ## Secrets
@@ -49,6 +49,7 @@ The generated agent secret is displayed once by `agent-add`; store it securely a
 | Non-standard JSON numbers | Strict JSON constant rejection |
 | Malformed payload | Structural validation |
 | Arbitrary shell interpretation | `ShellAdapter` uses argv parsing by default |
+| Evidence SSRF | HTTP(S) only, no redirects/credentials, DNS resolution checks, and non-global-address rejection |
 | Evidence redirect / oversized response | Redirect rejection + 1 MiB response bound |
 | Database upgrade breakage | Schema version metadata + backup workflow |
 | Evidence mismatch | Typed expected fields / status |
@@ -56,6 +57,14 @@ The generated agent secret is displayed once by `agent-add`; store it securely a
 ### Replay limitation
 
 Event IDs make retries idempotent **after Habitat has received the event**. They do not provide freshness against an attacker who captures a valid signed event and submits it before the legitimate sender's first delivery. Deployments that require replay resistance at that boundary should add a trusted freshness/nonce mechanism at the transport or agent-enforcement layer rather than treating HMAC alone as proof of freshness.
+
+### Evidence-network limitation
+
+The HTTP evidence adapter rejects direct private/local addresses before opening a configured endpoint and refuses redirects, which closes the common SSRF paths. DNS can still change between validation and connection on an untrusted network. High-assurance deployments should therefore place evidence endpoints behind controlled DNS/network policy or use a fixed allowlist/reverse proxy. Habitat does not treat external HTTP evidence as proof of real-world truth merely because the HTTP request succeeded.
+
+### Proof assurance boundary
+
+A proof bundle has separate assurance dimensions. Structural validity means the bundle matches the proof schema; content integrity means its digest matches; internal consistency means its claim, action, run, and ledger relationships agree; a signature, when present and valid, establishes cryptographic authenticity for the signed content; publisher trust depends on an independently configured trust relationship; and external truth is outside Habitat's own evidence boundary. A valid signed proof is therefore **not automatically** a trusted publisher statement or proof that the underlying real-world event happened.
 
 ## Deployment guidance
 
