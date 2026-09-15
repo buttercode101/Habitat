@@ -17,10 +17,46 @@ def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def _validate_structure(bundle: dict[str, Any], errors: list[str]) -> bool:
+    required = {"proof_version", "claim", "ledger", "content_sha256"}
+    missing = sorted(required - set(bundle))
+    if missing:
+        errors.append("missing fields: " + ", ".join(missing))
+
+    if bundle.get("proof_version") != "1":
+        errors.append("unsupported proof_version")
+
+    claim = bundle.get("claim")
+    ledger = bundle.get("ledger")
+    if not isinstance(claim, dict):
+        errors.append("claim must be an object")
+    if not isinstance(ledger, dict):
+        errors.append("ledger must be an object")
+    if not isinstance(bundle.get("content_sha256"), str):
+        errors.append("content_sha256 must be a string")
+
+    if isinstance(ledger, dict):
+        if ledger.get("integrity") not in {"intact", "failed"}:
+            errors.append("ledger.integrity must be 'intact' or 'failed'")
+        if not isinstance(ledger.get("actions"), list):
+            errors.append("ledger.actions must be an array")
+
+    if isinstance(bundle.get("signature"), dict):
+        signature = bundle["signature"]
+        if signature.get("algorithm") != "Ed25519":
+            errors.append("signature.algorithm must be 'Ed25519'")
+        for field in ("key_id", "agent_id", "public_key", "signature"):
+            if field not in signature:
+                errors.append(f"signature.{field} is required")
+    elif "signature" in bundle:
+        errors.append("signature must be an object")
+
+    return not errors
+
+
 def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], errors: list[str]) -> None:
     actions = ledger.get("actions")
     if not isinstance(actions, list):
-        errors.append("ledger.actions must be an array")
         return
 
     claim_habitat = claim.get("habitat_id")
@@ -60,22 +96,11 @@ def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], error
 
 
 def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
-    """Verify a decoded Habitat proof bundle without importing Habitat."""
+    """Verify a decoded Habitat proof bundle and report assurance boundaries."""
     errors: list[str] = []
-    required = {"proof_version", "claim", "ledger", "content_sha256"}
-    missing = sorted(required - set(bundle))
-    if missing:
-        errors.append("missing fields: " + ", ".join(missing))
-
-    if bundle.get("proof_version") != "1":
-        errors.append("unsupported proof_version")
-
-    claim = bundle.get("claim")
-    ledger = bundle.get("ledger")
-    if not isinstance(claim, dict):
-        errors.append("claim must be an object")
-    if not isinstance(ledger, dict):
-        errors.append("ledger must be an object")
+    structure_errors: list[str] = []
+    _validate_structure(bundle, structure_errors)
+    errors.extend(structure_errors)
 
     expected = bundle.get("content_sha256")
     if isinstance(expected, str):
@@ -90,16 +115,21 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     else:
         actual = None
 
-    integrity = ledger.get("integrity") if isinstance(ledger, dict) else None
-    if integrity not in {"intact", "failed"}:
-        errors.append("ledger.integrity must be 'intact' or 'failed'")
-
+    claim = bundle.get("claim")
+    ledger = bundle.get("ledger")
+    relationship_errors_before = len(errors)
     if isinstance(claim, dict) and isinstance(ledger, dict):
         _validate_relationships(claim, ledger, errors)
 
     verdict = claim.get("status") if isinstance(claim, dict) else None
+    integrity = ledger.get("integrity") if isinstance(ledger, dict) else None
     if verdict == "verified" and integrity != "intact":
         errors.append("verified claim cannot have failed ledger integrity")
+
+    relationship_valid = len(errors) == relationship_errors_before
+    content_valid = isinstance(actual, str) and actual == expected
+    signature = bundle.get("signature")
+    signature_state = "absent" if signature is None else "present-unverified"
 
     valid = not errors
     return {
@@ -110,6 +140,14 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         "errors": errors,
         "scope": "bundle-integrity-and-internal-consistency",
         "authenticity": "not-established",
+        "assurance": {
+            "structural_validity": not structure_errors,
+            "content_integrity": content_valid,
+            "internal_consistency": relationship_valid and not (verdict == "verified" and integrity != "intact"),
+            "signature": signature_state,
+            "publisher_trust": "not-assessed",
+            "external_truth": "not-established",
+        },
     }
 
 
