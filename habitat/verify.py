@@ -49,9 +49,15 @@ def verify_claim(
         claim.evidence = {"source": "habitat_trusted_ledger", "reason": "action_ledger_integrity_check_failed"}
         return _finish(claim, store, policy)
 
-    # Never rely on a fixed recent-history window: a valid claim may refer to an
-    # old action. Query SQLite using the exact correlation dimensions instead.
-    matches = store.matching_actions(claim.habitat_id, claim.job_id, claim.action, claim.run_id)
+    has_correlation = bool(claim.run_id or claim.job_id or claim.action)
+    matches = store.matching_actions(claim.habitat_id, claim.job_id, claim.action, claim.run_id) if has_correlation else []
+
+    # A claim without a run/job/action correlation has no trustworthy basis in
+    # Habitat's action ledger. It must never be verified from an unrelated action.
+    if not has_correlation and not evidence_adapter:
+        claim.status = "rejected"
+        claim.evidence = {"source": "habitat_trusted_ledger", "reason": "claim_requires_correlation_or_external_evidence"}
+        return _finish(claim, store, policy)
 
     # A claim without an explicit run_id may only be positively verified from the
     # trusted ledger when exactly one correlated action exists. The presence of an
@@ -79,7 +85,7 @@ def verify_claim(
             claim.evidence = {"source": "habitat_trusted_ledger", "reason": "no_matching_trusted_action"}
             return _finish(claim, store, policy)
 
-    if claim.run_id is not None or not (claim.job_id or claim.action) or len(matches) <= 1:
+    if claim.run_id is not None or (has_correlation and len(matches) <= 1):
         trusted = next((a for a in matches if a.status == claim.expected_status), None)
         if trusted:
             claim.status = "verified"
