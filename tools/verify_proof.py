@@ -71,6 +71,7 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         digest_input = dict(bundle)
         digest_input.pop("generated_at", None)
         digest_input.pop("content_sha256", None)
+        digest_input.pop("signature", None)
         actual = hashlib.sha256(canonical(digest_input).encode()).hexdigest()
         if actual != expected:
             errors.append("content_sha256 mismatch")
