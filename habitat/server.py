@@ -7,9 +7,12 @@ boundary because bearer credentials and event secrets are transport secrets.
 """
 from __future__ import annotations
 
+from collections import defaultdict
 import hmac
 import ipaddress
 import json
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
@@ -17,6 +20,47 @@ from .events import ingest_event, MAX_EVENT_BYTES
 from .store import Store
 from .generate import render_dashboard
 from .verify_api import proof_status, verify_and_prove
+
+
+class _AuthRateLimiter:
+    """Bound repeated remote authentication failures without affecting localhost."""
+
+    def __init__(self, max_failures=5, window_seconds=60, max_keys=4096):
+        self.max_failures = max_failures
+        self.window_seconds = window_seconds
+        self.max_keys = max_keys
+        self._failures = defaultdict(list)
+        self._lock = threading.Lock()
+
+    def _prune(self, key, now):
+        cutoff = now - self.window_seconds
+        entries = [stamp for stamp in self._failures.get(key, []) if stamp > cutoff]
+        if entries:
+            self._failures[key] = entries
+        else:
+            self._failures.pop(key, None)
+        return entries
+
+    def blocked(self, key, now=None):
+        now = time.monotonic() if now is None else now
+        with self._lock:
+            return len(self._prune(key, now)) >= self.max_failures
+
+    def record_failure(self, key, now=None):
+        now = time.monotonic() if now is None else now
+        with self._lock:
+            entries = self._prune(key, now)
+            entries.append(now)
+            self._failures[key] = entries
+            if len(self._failures) > self.max_keys:
+                oldest_key = min(self._failures, key=lambda candidate: self._failures[candidate][-1])
+                if oldest_key != key:
+                    self._failures.pop(oldest_key, None)
+            return len(entries) >= self.max_failures
+
+    def clear(self, key):
+        with self._lock:
+            self._failures.pop(key, None)
 
 
 def _is_loopback_host(host: str) -> bool:
@@ -27,6 +71,8 @@ def _is_loopback_host(host: str) -> bool:
 
 
 def make_handler(db_path, secret, require_signature=True, protect_remote=True):
+    limiter = _AuthRateLimiter()
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "Habitat/1.3"
         protocol_version = "HTTP/1.1"
@@ -41,15 +87,40 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             bound = getattr(self.server, "server_address", ("127.0.0.1", 0))[0]
             return not _is_loopback_host(str(bound))
 
+        def _client_key(self, kind):
+            peer = getattr(self, "client_address", ("unknown", 0))
+            return kind, str(peer[0])
+
+        def _auth_throttled(self, kind):
+            return limiter.blocked(self._client_key(kind))
+
+        def _auth_failed(self, kind):
+            return limiter.record_failure(self._client_key(kind))
+
+        def _auth_succeeded(self, kind):
+            limiter.clear(self._client_key(kind))
+
+        def _send_rate_limited(self):
+            self._send(429, {"error": "authentication_rate_limited"}, headers={"Retry-After": "60"})
+
         def _authorized_read(self) -> bool:
             if not self._remote_protected():
                 return True
+            if self._auth_throttled("server"):
+                self._send_rate_limited()
+                return False
             supplied = self.headers.get("Authorization", "")
             if not secret or not supplied.startswith("Bearer "):
+                self._auth_failed("server")
                 return False
-            return hmac.compare_digest(supplied[7:].strip(), secret)
+            valid = hmac.compare_digest(supplied[7:].strip(), secret)
+            if not valid:
+                self._auth_failed("server")
+                return False
+            self._auth_succeeded("server")
+            return True
 
-        def _send(self, code, payload):
+        def _send(self, code, payload, headers=None):
             raw = json.dumps(payload, default=str).encode("utf-8")
             self.send_response(code)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -57,6 +128,8 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
+            for name, value in (headers or {}).items():
+                self.send_header(name, value)
             self.end_headers()
             self.wfile.write(raw)
 
@@ -125,6 +198,9 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             if self._remote_protected() and not self._authorized_read():
                 self._send_forbidden()
                 return
+            if self._remote_protected() and self._auth_throttled("agent"):
+                self._send_rate_limited()
+                return
             try:
                 length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
@@ -143,8 +219,15 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             s = Store(db_path)
             try:
                 result = ingest_event(s, body, sig, secret, require_signature, agent_id, agent_secret)
+                if self._remote_protected() and agent_secret:
+                    self._auth_succeeded("agent")
                 self._send(200 if result.get("duplicate") else 202, result)
             except PermissionError as exc:
+                if self._remote_protected() and agent_secret:
+                    self._auth_failed("agent")
+                    if self._auth_throttled("agent"):
+                        self._send_rate_limited()
+                        return
                 self._send(401, {"error": str(exc)})
             except ValueError as exc:
                 self._send(400, {"error": str(exc)})
