@@ -1,0 +1,52 @@
+{
+  "claim": {
+    "action": "commit",
+    "claim": "Shipped Greenlight-k53 change: refresh the K53 database cache when online while retaining offline fallback.",
+    "created_at": "2026-09-15T13:32:01.154872+00:00",
+    "evidence": {
+      "action": "commit",
+      "action_id": "greenlight-commit-9dc5a0071696",
+      "details": {
+        "commit": "9dc5a007169689babe122ccfe673faa8b03c08c4",
+        "repo": "buttercode101/Greenlight-k53",
+        "summary": "Refresh K53 database cache when online while retaining offline fallback.",
+        "url": "https://github.com/buttercode101/Greenlight-k53/commit/9dc5a007169689babe122ccfe673faa8b03c08c4"
+      },
+      "run_id": "9dc5a007169689babe122ccfe673faa8b03c08c4",
+      "source": "habitat_trusted_ledger",
+      "status": "ok",
+      "timestamp": "2026-09-15T13:32:00.942618+00:00"
+    },
+    "expected_status": "ok",
+    "habitat_id": "real-greenlight",
+    "id": "176ad8d5-5bf5-48c5-bb96-093e2e30679b",
+    "job_id": null,
+    "run_id": "9dc5a007169689babe122ccfe673faa8b03c08c4",
+    "status": "verified",
+    "verified_at": "2026-09-15T13:32:01.362965+00:00"
+  },
+  "content_sha256": "c28f69061fe31f5be9c64915b898429462e696c930e351cc58497c9a3592ce7a",
+  "generated_at": "2026-09-15T13:32:01.373200+00:00",
+  "ledger": {
+    "actions": [
+      {
+        "action": "commit",
+        "actor": "system",
+        "details": {
+          "commit": "9dc5a007169689babe122ccfe673faa8b03c08c4",
+          "repo": "buttercode101/Greenlight-k53",
+          "summary": "Refresh K53 database cache when online while retaining offline fallback.",
+          "url": "https://github.com/buttercode101/Greenlight-k53/commit/9dc5a007169689babe122ccfe673faa8b03c08c4"
+        },
+        "habitat_id": "real-greenlight",
+        "id": "greenlight-commit-9dc5a0071696",
+        "job_id": null,
+        "run_id": "9dc5a007169689babe122ccfe673faa8b03c08c4",
+        "status": "ok",
+        "timestamp": "2026-09-15T13:32:00.942618+00:00"
+      }
+    ],
+    "integrity": "intact"
+  },
+  "proof_version": "1"
+}
