@@ -20,8 +20,25 @@ def test_proof_status_is_machine_readable(tmp_path):
     s.save_action(Action('a1', 'h1', utcnow(), 'agent', 'deploy', 'ok', 'j1', {'version': '1'}, 'run-1'))
     result = verify_and_prove(s, c.id)
     assert result['verdict'] == 'verified'
+    assert result['reverified'] is True
     assert result['proof']['content_sha256']
     assert result['proof']['ledger']['integrity'] == 'intact'
+    s.close()
+
+
+def test_external_claim_is_not_downgraded_without_adapter(tmp_path):
+    s = _store(tmp_path)
+    c = Claim.new('h1', 'external check passed', None, None, 'ok')
+    c.status = 'verified'
+    c.verified_at = utcnow()
+    c.evidence = {'source': 'github_issue', 'status': 'ok', 'query': 'owner/repo#1', 'data': {'state': 'open'}}
+    s.save_claim(c)
+    result = verify_and_prove(s, c.id)
+    stored = s.get_claim(c.id)
+    assert result['verdict'] == 'verified'
+    assert result['reverified'] is False
+    assert result['reverify_reason'] == 'external_evidence_requires_adapter'
+    assert stored.status == 'verified'
     s.close()
 
 

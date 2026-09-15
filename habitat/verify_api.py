@@ -7,17 +7,43 @@ from .proof import build_proof
 from .verify import verify_claim
 
 
-def verify_and_prove(store: Any, claim_id: str) -> dict[str, Any]:
-    """Re-verify a claim, then return its current verdict and proof bundle."""
+def verify_and_prove(
+    store: Any,
+    claim_id: str,
+    evidence_adapter: Any | None = None,
+    evidence_query: str | None = None,
+    evidence_expected: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Re-verify a claim, then return its current verdict and proof bundle.
+
+    External evidence cannot be freshly re-verified without the adapter that
+    originally supplied it. In that case this function returns the existing
+    decision without mutating it, rather than silently downgrading the claim.
+    """
     claim = store.get_claim(claim_id)
     if claim is None:
         raise KeyError(f"Unknown claim: {claim_id}")
-    claim = verify_claim(store, claim)
+
+    evidence = claim.evidence if isinstance(claim.evidence, dict) else {}
+    source = evidence.get("source")
+    if source and source != "habitat_trusted_ledger" and evidence_adapter is None:
+        proof = build_proof(store, claim.id)
+        return {
+            "claim_id": claim.id,
+            "verdict": claim.status,
+            "verified_at": claim.verified_at.isoformat() if claim.verified_at else None,
+            "reverified": False,
+            "reverify_reason": "external_evidence_requires_adapter",
+            "proof": proof,
+        }
+
+    claim = verify_claim(store, claim, evidence_adapter, evidence_query, evidence_expected)
     proof = build_proof(store, claim.id)
     return {
         "claim_id": claim.id,
         "verdict": claim.status,
         "verified_at": claim.verified_at.isoformat() if claim.verified_at else None,
+        "reverified": True,
         "proof": proof,
     }
 
