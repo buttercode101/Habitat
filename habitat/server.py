@@ -1,15 +1,15 @@
 """Local-first Habitat HTTP API.
 
-The API is intentionally safe-by-default for local use. Loopback listeners may
-be used without an HTTP auth header; non-loopback listeners require the
-configured server secret as a bearer credential for every request.
+Loopback listeners may be used without an HTTP auth header. Non-loopback
+listeners require the configured server secret as a bearer credential for
+every request. Remote deployments should additionally use TLS at the network
+boundary because bearer credentials and event secrets are transport secrets.
 """
 from __future__ import annotations
 
 import hmac
 import ipaddress
 import json
-import socket
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
@@ -30,6 +30,10 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
     class Handler(BaseHTTPRequestHandler):
         server_version = "Habitat/1.3"
         protocol_version = "HTTP/1.1"
+
+        def setup(self):
+            super().setup()
+            self.connection.settimeout(10)
 
         def _remote_protected(self) -> bool:
             if not protect_remote:
@@ -129,7 +133,6 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
             if length <= 0 or length > MAX_EVENT_BYTES:
                 self._send(413, {"error": "event_too_large"})
                 return
-            self.connection.settimeout(10)
             body = self.rfile.read(length)
             if len(body) != length:
                 self._send(400, {"error": "incomplete_request_body"})
@@ -145,6 +148,8 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
                 self._send(401, {"error": str(exc)})
             except ValueError as exc:
                 self._send(400, {"error": str(exc)})
+            except RuntimeError as exc:
+                self._send(503, {"error": str(exc)})
             finally:
                 s.close()
 
@@ -157,9 +162,11 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
 def serve(db_path, host="127.0.0.1", port=8787, secret=None, require_signature=True):
     if not _is_loopback_host(host) and not secret:
         raise ValueError("non-loopback listeners require a server secret")
+
     class HabitatHTTPServer(ThreadingHTTPServer):
         allow_reuse_address = True
         daemon_threads = True
+
     httpd = HabitatHTTPServer((host, port), make_handler(db_path, secret, require_signature, protect_remote=True))
     print(f"Habitat API listening on http://{host}:{port}")
     try:
