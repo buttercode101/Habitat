@@ -188,7 +188,7 @@ def make_handler(db_path, secret, require_signature=True, protect_remote=True):
                     self.end_headers()
                     self.wfile.write(raw)
                 elif path == "/dashboard":
-                    html = render_dashboard(s.habitat(), s.jobs(), s.signals(), s.actions(), s.habitat().name)
+                    html = render_dashboard(s.habitat(), s.jobs(), s.signals(), s.actions(), s.habitat().name, s.claims())
                     raw = html.encode("utf-8")
                     self.send_response(200)
                     self.send_header("Content-Type", "text/html; charset=utf-8")
