@@ -4,6 +4,18 @@
 
 Habitat is a local-first runtime and supervision layer. It keeps structured state, records actions, detects high-signal anomalies, and renders a human-readable supervision surface.
 
+## Current project control
+
+Before starting material work, read these in order:
+
+1. **`STATUS.md`** — current verified state and exact restart point.
+2. **`PROJECT_MAP.md`** — complete product/history map, including the separation between Habitat and the later Forge/Truth Layer discovery.
+3. **`DECISIONS.md`** — durable decisions and unresolved questions.
+4. **`ROADMAP.md`** — current work control and gates.
+5. **`WORK_HISTORY.md`** — phase-based reconstruction of how the project evolved.
+
+The repository is the source of truth for implementation. These control documents are the source of truth for project context and decisions. When they disagree, inspect the implementation and reconcile the documents rather than guessing.
+
 ## Core principles
 - Habitat first
 - Gentle by default
@@ -28,3 +40,9 @@ Habitat is a local-first runtime and supervision layer. It keeps structured stat
 - Silent failures become visible.
 - Model switching is configuration-only.
 - Adding a habitat takes minutes, not hours.
+
+## Anti-drift rule
+
+> **Never make the project look more complete than it actually is.**
+
+No fake functionality, metrics, verification, security claims, or confidence. If something is unverified, say so and record it as unknown.
