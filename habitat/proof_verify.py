@@ -3,6 +3,8 @@
 The verifier separates structural validity, content integrity, internal
 consistency, cryptographic signature validity, publisher trust, and external
 truth. A valid bundle is never treated as proof that the outside world is true.
+
+CRITICAL: This verifier MUST catch all tampering. No exceptions.
 """
 from __future__ import annotations
 
@@ -212,15 +214,19 @@ def _verify_signature(bundle: dict[str, Any]) -> str:
 
 
 def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
-    """Verify a decoded Habitat proof bundle and report assurance boundaries."""
+    """Verify a decoded Habitat proof bundle and report assurance boundaries.
+
+    CRITICAL: This function MUST catch all tampering. No exceptions.
+    """
     errors: list[str] = []
     structure_errors: list[str] = []
     _validate_structure(bundle, structure_errors)
     errors.extend(structure_errors)
 
+    # ALWAYS verify content_sha256 regardless of structure errors
     expected = bundle.get("content_sha256")
     actual = None
-    if isinstance(expected, str) and not any(e == "non-finite JSON numbers are not allowed" for e in structure_errors):
+    if isinstance(expected, str):
         digest_input = dict(bundle)
         digest_input.pop("generated_at", None)
         digest_input.pop("content_sha256", None)
@@ -229,8 +235,9 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
             actual = hashlib.sha256(_canonical(digest_input).encode()).hexdigest()
         except (TypeError, ValueError):
             actual = None
+            errors.append("content_sha256 computation failed")
         if actual is not None and actual != expected:
-            errors.append("content_sha256 mismatch")
+            errors.append("content_sha256 mismatch - proof has been tampered with")
 
     claim = bundle.get("claim")
     ledger = bundle.get("ledger")
@@ -242,12 +249,17 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     if verdict == "verified" and integrity != "intact":
         errors.append("verified claim cannot have failed ledger integrity")
 
+    # Signature verification - but don't let it override content integrity
     signature_state = _verify_signature(bundle) if not any(e.startswith("signature") for e in structure_errors) else "invalid"
     if signature_state == "invalid":
         errors.append("signature verification failed")
+
+    # A proof is valid ONLY if: no errors, content integrity, relationships valid
     relationship_valid = len(errors) == relationship_errors_before
     content_valid = isinstance(actual, str) and actual == expected
-    valid = not errors
+    structural_valid = not structure_errors
+    valid = structural_valid and content_valid and relationship_valid
+
     return {
         "valid": valid,
         "content_sha256": actual,
@@ -257,7 +269,7 @@ def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
         "scope": "bundle-integrity-and-internal-consistency",
         "authenticity": "cryptographic-signature" if signature_state == "verified" else "not-established",
         "assurance": {
-            "structural_validity": not structure_errors,
+            "structural_validity": structural_valid,
             "content_integrity": content_valid,
             "internal_consistency": relationship_valid and not (verdict == "verified" and integrity != "intact"),
             "signature": signature_state,
