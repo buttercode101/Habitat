@@ -10,6 +10,7 @@ export default function Home() {
         <nav className="desktop-nav" aria-label="Primary navigation">
           <a href="#how-it-works">How it works</a>
           <a href="#why">Why Habitat</a>
+          <Link href="/evidence">Evidence</Link>
           <Link href="/dashboard">Live dashboard</Link>
           <Link className="nav-cta" href="/dashboard#proof-demo">Inspect a proof</Link>
         </nav>
@@ -18,6 +19,7 @@ export default function Home() {
           <div className="mobile-nav-panel">
             <a href="#how-it-works">How it works</a>
             <a href="#why">Why Habitat</a>
+            <Link href="/evidence">Evidence</Link>
             <Link href="/dashboard">Live dashboard</Link>
             <Link href="/dashboard#proof-demo">Inspect a proof</Link>
             <a href={GITHUB_URL}>GitHub ↗</a>
