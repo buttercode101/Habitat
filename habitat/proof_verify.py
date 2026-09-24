@@ -181,7 +181,15 @@ def _validate_relationships(claim: dict[str, Any], ledger: dict[str, Any], error
         errors.append("claim evidence action run_id does not match claim.run_id")
 
 
-def _verify_signature(bundle: dict[str, Any], trust_registry: Any | None = None) -> str:
+def _verify_signature(bundle: dict[str, Any]) -> str:
+    """Report signature state without elevating an embedded key to publisher trust.
+
+    A successful cryptographic check against the public key *carried in the
+    bundle* only proves the signature is well-formed for that key material. It
+    does not establish that the key is trusted by the verifier. Publisher trust
+    requires an explicit TrustRegistry (see habitat.trust). Therefore the
+    standalone / unconfigured path must never return "verified".
+    """
     signature = bundle.get("signature")
     if signature is None:
         return "absent"
@@ -194,20 +202,16 @@ def _verify_signature(bundle: dict[str, Any], trust_registry: Any | None = None)
         unsigned = dict(bundle)
         unsigned.pop("signature", None)
         Ed25519PublicKey.from_public_bytes(public_raw).verify(sig_raw, _canonical(unsigned).encode("utf-8"))
-        if trust_registry is None:
-            return "present-unverified"
-        key_id = signature.get("key_id")
-        agent_id = signature.get("agent_id")
-        if trust_registry.is_trusted(key_id, agent_id, public_raw):
-            return "verified"
-        return "valid-untrusted"
+        # Crypto OK against the embedded key only. Without a TrustRegistry this
+        # remains present-unverified (publisher trust is a separate layer).
+        return "present-unverified"
     except ImportError:
         return "present-unverified"
     except Exception:
         return "invalid"
 
 
-def verify_proof(bundle: dict[str, Any], trust_registry: Any | None = None) -> dict[str, Any]:
+def verify_proof(bundle: dict[str, Any]) -> dict[str, Any]:
     """Verify a decoded Habitat proof bundle and report assurance boundaries."""
     errors: list[str] = []
     structure_errors: list[str] = []
@@ -238,7 +242,7 @@ def verify_proof(bundle: dict[str, Any], trust_registry: Any | None = None) -> d
     if verdict == "verified" and integrity != "intact":
         errors.append("verified claim cannot have failed ledger integrity")
 
-    signature_state = _verify_signature(bundle, trust_registry) if not any(e.startswith("signature") for e in structure_errors) else "invalid"
+    signature_state = _verify_signature(bundle) if not any(e.startswith("signature") for e in structure_errors) else "invalid"
     if signature_state == "invalid":
         errors.append("signature verification failed")
     relationship_valid = len(errors) == relationship_errors_before
@@ -251,19 +255,19 @@ def verify_proof(bundle: dict[str, Any], trust_registry: Any | None = None) -> d
         "ledger_integrity": integrity,
         "errors": errors,
         "scope": "bundle-integrity-and-internal-consistency",
-        "authenticity": "cryptographic-signature" if signature_state in {"verified", "valid-untrusted", "present-unverified"} else "not-established",
+        "authenticity": "cryptographic-signature" if signature_state == "verified" else "not-established",
         "assurance": {
             "structural_validity": not structure_errors,
             "content_integrity": content_valid,
             "internal_consistency": relationship_valid and not (verdict == "verified" and integrity != "intact"),
             "signature": signature_state,
-            "publisher_trust": "verified" if signature_state == "verified" else ("not-assessed" if signature_state in {"absent", "present-unverified"} else "untrusted"),
+            "publisher_trust": "not-assessed",
             "external_truth": "not-established",
         },
     }
 
 
-def verify_file(path: str | Path, trust_registry: Any | None = None) -> dict[str, Any]:
+def verify_file(path: str | Path) -> dict[str, Any]:
     path = Path(path)
     if path.stat().st_size > MAX_PROOF_BYTES:
         return {"valid": False, "errors": [f"proof bundle exceeds maximum size of {MAX_PROOF_BYTES} bytes"]}
@@ -274,4 +278,4 @@ def verify_file(path: str | Path, trust_registry: Any | None = None) -> dict[str
         return {"valid": False, "errors": [str(exc)]}
     if not isinstance(value, dict):
         return {"valid": False, "errors": ["proof bundle must be a JSON object"]}
-    return verify_proof(value, trust_registry)
+    return verify_proof(value)
