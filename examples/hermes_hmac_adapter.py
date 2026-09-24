@@ -36,6 +36,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 import uuid
@@ -50,8 +51,39 @@ if str(ROOT) not in sys.path:
 from habitat.events import signature_for  # noqa: E402
 
 
+MAX_RUN_ID_LENGTH = 256
+MAX_CLAIM_LENGTH = 100000  # 100KB max claim
+MAX_ERROR_LENGTH = 10000
+
+
 def _env(name: str, default: str | None = None) -> str | None:
     return os.environ.get(name, default)
+
+
+def _validate_inputs(run_id: str, claim: str | None, error: str | None) -> list[str]:
+    """Validate adapter inputs. Returns list of errors (empty if valid)."""
+    errors = []
+    
+    if not run_id or not run_id.strip():
+        errors.append("run_id cannot be empty")
+    elif len(run_id) > MAX_RUN_ID_LENGTH:
+        errors.append(f"run_id exceeds maximum length of {MAX_RUN_ID_LENGTH}")
+    elif any(ord(c) < 32 for c in run_id):
+        errors.append("run_id contains control characters")
+    
+    if claim is not None:
+        if len(claim) > MAX_CLAIM_LENGTH:
+            errors.append(f"claim exceeds maximum length of {MAX_CLAIM_LENGTH}")
+        if "\x00" in claim:
+            errors.append("claim contains null bytes")
+    
+    if error is not None:
+        if len(error) > MAX_ERROR_LENGTH:
+            errors.append(f"error exceeds maximum length of {MAX_ERROR_LENGTH}")
+        if "\x00" in error:
+            errors.append("error contains null bytes")
+    
+    return errors
 
 
 def build_event(
@@ -126,6 +158,13 @@ def main() -> int:
     p.add_argument("--url", default=_env("HABITAT_URL", "http://127.0.0.1:8787"))
     args = p.parse_args()
 
+    # Validate inputs
+    validation_errors = _validate_inputs(args.run_id, args.claim, args.error)
+    if validation_errors:
+        result = {"error": "input_validation_failed", "details": validation_errors}
+        print(json.dumps(result, indent=2))
+        return 1
+
     habitat_id = _env("HABITAT_HABITAT_ID", "hermes-local")
     job_id = _env("HABITAT_JOB_ID", "hermes-job")
     agent_id = _env("HABITAT_AGENT_ID", "hermes")
@@ -146,19 +185,29 @@ def main() -> int:
 
     if args.local_only or not secret:
         if args.prove and args.claim:
-            result["local_proof"] = local_prove(
-                args.run_id,
-                args.claim,
-                "ok" if args.status == "ok" else "failed",
-                {"error": args.error} if args.error else None,
-            )
+            try:
+                result["local_proof"] = local_prove(
+                    args.run_id,
+                    args.claim,
+                    "ok" if args.status == "ok" else "failed",
+                    {"error": args.error} if args.error else None,
+                )
+            except Exception as e:
+                result["local_proof_error"] = str(e)
+                print(json.dumps(result, indent=2))
+                return 1
         else:
             result["note"] = "No HABITAT_AGENT_SECRET set and --prove not requested; event not sent."
         print(json.dumps(result, indent=2))
         return 0
 
     events_url = args.url.rstrip("/") + "/events"
-    result["ingest"] = post_signed(events_url, body, secret, agent_id)
+    try:
+        result["ingest"] = post_signed(events_url, body, secret, agent_id)
+    except SystemExit as e:
+        result["ingest_error"] = str(e)
+        print(json.dumps(result, indent=2))
+        return 1
 
     if args.claim:
         claim_event = build_event(
@@ -170,16 +219,22 @@ def main() -> int:
             claim=args.claim,
         )
         claim_body = json.dumps(claim_event, separators=(",", ":"), sort_keys=True).encode()
-        result["claim_ingest"] = post_signed(events_url, claim_body, secret, agent_id)
+        try:
+            result["claim_ingest"] = post_signed(events_url, claim_body, secret, agent_id)
+        except SystemExit as e:
+            result["claim_ingest_error"] = str(e)
 
     if args.prove and args.claim:
-        # Prefer local export after HTTP ingest so the proof is available offline.
-        result["local_proof"] = local_prove(
-            args.run_id,
-            args.claim,
-            "ok" if args.status == "ok" else "failed",
-            {"source": "hermes_hmac_adapter", "error": args.error},
-        )
+        try:
+            # Prefer local export after HTTP ingest so the proof is available offline.
+            result["local_proof"] = local_prove(
+                args.run_id,
+                args.claim,
+                "ok" if args.status == "ok" else "failed",
+                {"source": "hermes_hmac_adapter", "error": args.error},
+            )
+        except Exception as e:
+            result["local_proof_error"] = str(e)
 
     print(json.dumps(result, indent=2))
     return 0
