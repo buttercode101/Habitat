@@ -112,3 +112,6 @@ See `PROJECT.md`, `PROTOCOL.md`, `ARCHITECTURE.md`, `SECURITY.md`, `PROOF.md`, a
 ## License
 
 MIT.
+
+
+<!-- Deployment verification: 2026-09-24 -->
