@@ -2,10 +2,10 @@
 
 > Canonical restart point. Read this before making a material change.
 
-**Last reconciled:** 2026-09-16  
+**Last reconciled:** 2026-09-24  
 **Repository:** `buttercode101/Habitat`  
 **Default branch:** `main`  
-**HEAD:** `35e7fdf820ace8b5cb31b4f5838be8e468340aa5`  
+**HEAD:** pending 10× integration commit  
 **Package version:** `1.3.0`  
 **Python:** `>=3.10`  
 **Runtime dependencies:** none; optional Ed25519 signing dependency  
@@ -13,85 +13,60 @@
 
 ## What Habitat is today
 
-Habitat is a local-first supervision and accountability runtime for autonomous agents. It records structured agent/job activity, maintains a trusted local ledger, correlates claims to runs, evaluates evidence and policy, raises supervision signals, and can export portable proof bundles for independent verification.
+Habitat is a local-first supervision and accountability runtime for autonomous agents. It records structured agent/job activity, maintains a trusted local ledger, correlates claims to runs, evaluates evidence and policy, raises supervision signals, and exports portable proof bundles for independent verification.
 
-The current product is **Habitat**. The later **Forge / project-truth-layer** idea is a product hypothesis discovered during validation; it is **not currently the implemented product and must not be treated as shipped functionality**.
+The current product is **Habitat**. Forge / project-truth-layer remains a product hypothesis discovered during validation; it is **not shipped functionality**.
+
+## 2026-09-24 10× integration
+
+The current state now includes the Habitat 10× package, applied within the existing product boundary:
+
+- optional local external tip anchoring via `habitat.anchor`
+- Hermes post-action/in-process bridge and signed HMAC event adapter
+- reusable evidence-policy presets for run binding, drift/skip rejection, auth outcomes, and evidence freshness
+- read-only agentscope proof source plus integration instructions/config
+- CI workflow for proof + optional tip verification
+- release-proof / handoff / rescue monetization artifacts as explicit hypotheses, not traction claims
+
+### Assurance boundary
+
+The verifier now distinguishes:
+
+- structural validity
+- content integrity
+- internal consistency
+- signature presence/cryptographic validity
+- publisher trust
+- external-world truth
+
+A signature that verifies cryptographically is **not** automatically publisher-trusted. Trust requires an explicit trust registry.
+
+### Integration boundary
+
+- Hermes integration is production-shaped but **not claimed as live production wiring** until exercised against a real Hermes installation.
+- agentscope integration is read-only and documented; its separate repository is **not claimed as merged**.
+- tip anchoring is local-first and optional; no external anchoring service is assumed.
+- monetization material is a testable cashflow hypothesis, not evidence of paying customers.
 
 ## Verified repository facts
 
 - `main` is the default branch and the repository is public and unarchived.
-- The package is version `1.3.0` with no required runtime dependencies.
+- Package version is `1.3.0` with no required runtime dependencies.
 - SQLite is the durable local store.
-- OTel-style GenAI spans can be bridged into Habitat without adding another tracing protocol.
+- OTel-style GenAI spans can be bridged into Habitat using an existing trace ID as Habitat run ID.
 - Claims can be bound to exact runs/correlations and checked against recorded evidence.
 - The action ledger has tamper-evident SHA-256 chaining and integrity checks.
 - Portable proof bundles can be exported and verified without the producer's database, server, or Habitat installation.
-- Optional Ed25519 signing and an explicit trust registry exist; signature presence, cryptographic verification, publisher trust, and external-world truth are intentionally separate assurance levels.
-- A standalone GitHub Actions proof-verification workflow exists.
-- A public landing site is documented as `https://habitat-za.vercel.app`.
-
-## Current implementation areas
-
-### Runtime / protocol
-- configuration and validation
-- SQLite persistence
-- jobs and run correlation
-- structured events and authenticated HTTP ingestion
-- agent identity and authorization
-- actions / claims / evidence
-- supervision signals and recovery lifecycle
-- scheduling loop
-- external evidence predicates
-- doctor diagnostics
-- backup / restore
-- CLI
-
-### Assurance / proof
-- tamper-evident action ledger
-- claim verification
-- deterministic evidence policies
-- portable `proof.json` bundles
-- compact proof cards
-- standalone zero-install verifier
-- optional Ed25519 signatures
-- trusted-key registry with expiry/revocation
-- explicit assurance model
-
-### Interoperability
-- OTel-style bridge using an existing trace ID as Habitat run ID
-- intentionally small accountability projection rather than a replacement telemetry protocol
-
-### Public surface
-- public landing page
-- live proof artifact as the core marketing demonstration
-- separate operational inspection surface
-- responsive/mobile hardening work through the current HEAD
-
-## What is *not* verified by this state file
-
-This file does not claim that every production deployment, external service, real-world outcome, or security property has been independently re-tested today. It records repository facts and documented boundaries. Runtime verification must still be performed where the task depends on it.
-
-## Known current focus
-
-The last repository changes were concentrated on the public web surface and responsive cleanup. The current HEAD removes an obsolete competing responsive stylesheet. Before feature work resumes, the next agent should verify the working tree/CI state and reconcile the public surface with the current implementation.
+- Optional Ed25519 signing and an explicit trust registry exist; signature presence, cryptographic verification, publisher trust, and external-world truth are separate assurance levels.
+- A standalone GitHub Actions proof-verification workflow is now included.
+- Public site: `https://habitat-za.vercel.app`.
 
 ## Immediate next action
 
-**Do not add product features yet.** Perform a baseline verification pass against HEAD: repository tree, tests/CI, web build/deploy state, proof verification paths, and documentation consistency. Record discrepancies before changing code.
-
-## Restart protocol
-
-1. Read `PROJECT.md`.
-2. Read this file.
-3. Read `PROJECT_MAP.md` for the historical/product map.
-4. Read `DECISIONS.md` before revisiting a disputed direction.
-5. Read `ROADMAP.md` before proposing new work.
-6. Inspect the actual repository at the current HEAD.
-7. Treat `VERIFIED` facts as repository-backed; treat `HYPOTHESIS`, `ASSUMPTION`, and `UNKNOWN` explicitly.
-8. After material work, update this file and the relevant decision/roadmap record in the same change.
+**Verify the integrated state before feature expansion.** Run the core suite, the anchor tests, the proof-signature assurance regression, Hermes local prove smoke, and the web deployment/route checks. Record discrepancies before adding features.
 
 ## Anti-drift rule
 
 > **Never make the project look more complete than it actually is.**
 
-No fake functionality, fake metrics, fake verification, fake security claims, or undocumented assumptions. If something is not verified, label it.
+No fake functionality, metrics, verification, security claims, or undocumented assumptions.
