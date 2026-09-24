@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 const GITHUB_URL = "https://github.com/buttercode101/Habitat";
-const PROOF_URL = "https://github.com/buttercode101/Habitat/blob/main/proofs/rosendaltown-45bc7aa7.json";
 
 export default function Home() {
   return (
@@ -12,7 +11,7 @@ export default function Home() {
           <a href="#how-it-works">How it works</a>
           <a href="#why">Why Habitat</a>
           <Link href="/dashboard">Live dashboard</Link>
-          <a className="nav-cta" href={GITHUB_URL}>GitHub ↗</a>
+          <Link className="nav-cta" href="/proof-demo">Inspect a proof</Link>
         </nav>
         <details className="mobile-nav">
           <summary aria-label="Open navigation"><span>Menu</span><i aria-hidden="true">↗</i></summary>
@@ -20,6 +19,7 @@ export default function Home() {
             <a href="#how-it-works">How it works</a>
             <a href="#why">Why Habitat</a>
             <Link href="/dashboard">Live dashboard</Link>
+            <Link href="/proof-demo">Inspect a proof</Link>
             <a href={GITHUB_URL}>GitHub ↗</a>
           </div>
         </details>
@@ -31,12 +31,12 @@ export default function Home() {
           <h1>Don&apos;t just log what an agent did. <em>Prove it.</em></h1>
           <p className="marketing-lede">Habitat turns agent events into policy-checked claims and portable proof artifacts you can inspect, verify and carry outside the system that produced them.</p>
           <div className="hero-actions">
-            <a className="button primary large" href={GITHUB_URL}>Get Habitat on GitHub ↗</a>
-            <a className="button large" href={PROOF_URL}>See a real proof ↗</a>
+            <Link className="button primary large" href="/proof-demo">Inspect a real proof</Link>
+            <a className="button large" href={GITHUB_URL}>Get Habitat on GitHub ↗</a>
           </div>
           <p className="hero-note">Local-first · portable · no hosted control plane required</p>
         </div>
-        <div className="hero-proof" aria-label="Habitat proof flow">
+        <Link className="hero-proof" href="/proof-demo" aria-label="Open the interactive Habitat proof demo">
           <div className="proof-window">
             <div className="window-bar"><span /><span /><span /><b>habitat proof</b></div>
             <div className="proof-status"><span className="status-dot" /> VERIFIED <small>portable proof</small></div>
@@ -48,9 +48,9 @@ export default function Home() {
               <div><span>Integrity</span><b>intact</b></div>
               <div><span>Digest</span><b className="mono">a21b7f2f…18fc088</b></div>
             </div>
-            <div className="proof-footer">structural · integrity · consistency</div>
+            <div className="proof-footer">Click to inspect · tamper simulation included</div>
           </div>
-        </div>
+        </Link>
       </section>
 
       <section className="trust-strip"><div className="shell-width trust-inner"><span>Built for the gap between</span><strong>observability</strong><i>and</i><strong>trust</strong></div></section>
@@ -94,10 +94,10 @@ export default function Home() {
       </section>
 
       <section className="final-cta shell-width">
-        <p className="eyebrow">Start small</p>
+        <p className="eyebrow">See it before you install it</p>
         <h2>Give one consequential agent action a proof.</h2>
-        <p>Run Habitat beside the systems you already use. Keep the ledger local. Export the evidence when you need to share it.</p>
-        <div className="hero-actions"><a className="button primary large" href={GITHUB_URL}>Get started on GitHub ↗</a><Link className="button large" href="/dashboard">Open dashboard</Link></div>
+        <p>Inspect a real Habitat proof in your browser, change the evidence, and watch the integrity check fail. Then explore the live dashboard or install Habitat locally.</p>
+        <div className="hero-actions"><Link className="button primary large" href="/proof-demo">Open proof inspector</Link><Link className="button large" href="/dashboard">Open dashboard</Link><a className="button large" href={GITHUB_URL}>GitHub ↗</a></div>
       </section>
 
       <footer className="marketing-footer shell-width"><Link className="brand" href="/">Habitat</Link><span>Local-first accountability for AI agents.</span><a href={GITHUB_URL}>GitHub ↗</a></footer>
