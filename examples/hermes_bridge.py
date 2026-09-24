@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,15 +40,25 @@ def record_and_prove(
     db_path: Path | None = None,
     export_dir: Path | None = None,
 ) -> dict:
-    db = db_path or Path(tempfile.mkdtemp()) / "habitat.db"
-    store = Store(db)
+    # Use a unique temp directory per invocation for concurrency safety
+    if db_path is None:
+        unique_suffix = f"{run_id}-{uuid.uuid4().hex[:8]}"
+        db_path = Path(tempfile.mkdtemp(prefix=f"habitat-{unique_suffix}-")) / "habitat.db"
+    
+    # Ensure parent directory exists
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    store = Store(db_path)
     now = datetime.now(timezone.utc)
 
     store.save_habitat(Habitat("hermes-local", "Hermes local", "hermes", now, now))
     store.save_job(Job("hermes-job", "hermes-local", "Hermes job", None, True, None))
 
+    # Use unique action ID per run to prevent replay attacks
+    unique_action_id = f"act-{run_id}-{uuid.uuid4().hex[:8]}"
+    
     action = Action(
-        id=f"act-{run_id}",
+        id=unique_action_id,
         habitat_id="hermes-local",
         timestamp=now,
         actor="agent",
@@ -59,8 +70,11 @@ def record_and_prove(
     )
     store.save_action(action)
 
+    # Use unique claim ID per run
+    unique_claim_id = f"claim-{run_id}-{uuid.uuid4().hex[:8]}"
+    
     claim = Claim(
-        id=f"claim-{run_id}",
+        id=unique_claim_id,
         habitat_id="hermes-local",
         job_id="hermes-job",
         claim=claim_text,
@@ -73,7 +87,7 @@ def record_and_prove(
     verify_claim(store, claim)
     claim = store.get_claim(claim.id)
 
-    out = export_dir or db.parent
+    out = export_dir or db_path.parent
     out.mkdir(parents=True, exist_ok=True)
     proof_path = out / f"proof-{run_id}.json"
     card_path = out / f"proof-{run_id}.md"
