@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getClaims, getStatus, type Claim } from "../../lib/habitat";
+import ProofDemo from "./ProofDemo";
 
 export const metadata: Metadata = {
   title: "Habitat Dashboard",
@@ -49,7 +50,7 @@ function DemoDashboard({ error }: { error: string }) {
       </section>
       <section className="section-head"><div><p className="eyebrow">Repository proof</p><h2>One real claim, ready to inspect</h2></div><span className="muted">Checked-in artifact</span></section>
       <div className="claims"><ClaimCard claim={DEMO_CLAIM} demo /></div>
-      <div className="demo-bridge"><div><strong>Want the full verification experience?</strong><span>Open the proof inspector to validate the SHA-256 digest, simulate tampering, and download the portable JSON.</span></div><Link className="button primary" href="/proof-demo">Inspect proof</Link></div>
+      <ProofDemo />
       <footer><Link href="/">Habitat</Link> · Demo mode is explicit. A configured Habitat service becomes the source of truth.</footer>
     </main>
   );
