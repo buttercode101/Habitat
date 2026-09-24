@@ -44,9 +44,9 @@ export default function Home() {
             <div className="proof-live"><span className="live-dot" /><strong>VERIFIED</strong><span>Habitat ledger · exact run correlation</span></div>
             <div className="proof-lines">
               <div><span>Evidence</span><b>trusted ledger</b></div>
-              <div><span>Action</span><b>repository change</b></div>
+              <div><span>Action</span><b>run_job</b></div>
               <div><span>Integrity</span><b>intact</b></div>
-              <div><span>Digest</span><b className="mono">a21b7f2f…18fc088</b></div>
+              <div><span>Digest</span><b className="mono">faaa6dfb…2acc2</b></div>
             </div>
             <div className="proof-footer">Click to inspect · tamper simulation included</div>
           </div>
