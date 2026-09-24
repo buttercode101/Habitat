@@ -11,7 +11,7 @@ export default function Home() {
           <a href="#how-it-works">How it works</a>
           <a href="#why">Why Habitat</a>
           <Link href="/dashboard">Live dashboard</Link>
-          <Link className="nav-cta" href="/proof-demo">Inspect a proof</Link>
+          <Link className="nav-cta" href="/dashboard#proof-demo">Inspect a proof</Link>
         </nav>
         <details className="mobile-nav">
           <summary aria-label="Open navigation"><span>Menu</span><i aria-hidden="true">↗</i></summary>
@@ -19,7 +19,7 @@ export default function Home() {
             <a href="#how-it-works">How it works</a>
             <a href="#why">Why Habitat</a>
             <Link href="/dashboard">Live dashboard</Link>
-            <Link href="/proof-demo">Inspect a proof</Link>
+            <Link href="/dashboard#proof-demo">Inspect a proof</Link>
             <a href={GITHUB_URL}>GitHub ↗</a>
           </div>
         </details>
@@ -31,12 +31,12 @@ export default function Home() {
           <h1>Don&apos;t just log what an agent did. <em>Prove it.</em></h1>
           <p className="marketing-lede">Habitat turns agent events into policy-checked claims and portable proof artifacts you can inspect, verify and carry outside the system that produced them.</p>
           <div className="hero-actions">
-            <Link className="button primary large" href="/proof-demo">Inspect a real proof</Link>
+            <Link className="button primary large" href="/dashboard#proof-demo">Inspect a real proof</Link>
             <a className="button large" href={GITHUB_URL}>Get Habitat on GitHub ↗</a>
           </div>
           <p className="hero-note">Local-first · portable · no hosted control plane required</p>
         </div>
-        <Link className="hero-proof" href="/proof-demo" aria-label="Open the interactive Habitat proof demo">
+        <Link className="hero-proof" href="/dashboard#proof-demo" aria-label="Open the interactive Habitat proof demo">
           <div className="proof-window">
             <div className="window-bar"><span /><span /><span /><b>habitat proof</b></div>
             <div className="proof-status"><span className="status-dot" /> VERIFIED <small>portable proof</small></div>
@@ -97,7 +97,7 @@ export default function Home() {
         <p className="eyebrow">See it before you install it</p>
         <h2>Give one consequential agent action a proof.</h2>
         <p>Inspect a real Habitat proof in your browser, change the evidence, and watch the integrity check fail. Then explore the live dashboard or install Habitat locally.</p>
-        <div className="hero-actions"><Link className="button primary large" href="/proof-demo">Open proof inspector</Link><Link className="button large" href="/dashboard">Open dashboard</Link><a className="button large" href={GITHUB_URL}>GitHub ↗</a></div>
+        <div className="hero-actions"><Link className="button primary large" href="/dashboard#proof-demo">Open proof inspector</Link><Link className="button large" href="/dashboard">Open dashboard</Link><a className="button large" href={GITHUB_URL}>GitHub ↗</a></div>
       </section>
 
       <footer className="marketing-footer shell-width"><Link className="brand" href="/">Habitat</Link><span>Local-first accountability for AI agents.</span><a href={GITHUB_URL}>GitHub ↗</a></footer>
