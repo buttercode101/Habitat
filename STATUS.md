@@ -70,3 +70,21 @@ A signature that verifies cryptographically is **not** automatically publisher-t
 > **Never make the project look more complete than it actually is.**
 
 No fake functionality, metrics, verification, security claims, or undocumented assumptions.
+
+
+## 2026-09-24 10× integration
+
+The Habitat 10× package has been applied to the existing product boundary: optional local tip anchoring, Hermes bridge/adapter examples, evidence-policy presets, read-only agentscope proof ingestion guidance, proof/tip CI verification, and monetization experiment artifacts.
+
+### Boundaries
+- Habitat remains local-first; no hosted control plane or product rename.
+- Hermes wiring is production-shaped but not claimed as live until exercised against a real Hermes installation.
+- agentscope integration is read-only and its separate repository is not claimed as merged.
+- Tip anchoring is optional and local-first; no external anchoring service is assumed.
+- Monetization documents are hypotheses, not evidence of paying customers.
+
+## Immediate next action
+
+Verify the integrated state before feature expansion: core tests, anchor tests, proof-signature assurance regression, Hermes local-prove smoke, CI workflow, and live web/deployment route checks.
+
+> Never make the project look more complete than it actually is.
