@@ -11,9 +11,7 @@
 
 ## Current verified position
 
-Habitat is the implemented product. The public deployment and reconciled Evidence surface have been independently browser-verified. The repository's current `main` commit is:
-
-`555490d13b1045ef86d517a77b6c07a26681a4ad`
+Habitat is the implemented product. The public deployment and reconciled Evidence surface have been independently browser-verified. The repository tip is intentionally not duplicated here; verify `main` directly before acting.
 
 The current CI matrix is green on Python 3.10–3.13 plus dependency audit.
 
