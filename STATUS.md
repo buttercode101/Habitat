@@ -2,10 +2,9 @@
 
 > Canonical restart point. Read this before making a material change.
 
-**Last reconciled:** 2026-09-24  
+**Last reconciled:** 2026-09-25  
 **Repository:** `buttercode101/Habitat`  
 **Default branch:** `main`  
-**HEAD:** pending 10× integration commit  
 **Package version:** `1.3.0`  
 **Python:** `>=3.10`  
 **Runtime dependencies:** none; optional Ed25519 signing dependency  
@@ -17,74 +16,39 @@ Habitat is a local-first supervision and accountability runtime for autonomous a
 
 The current product is **Habitat**. Forge / project-truth-layer remains a product hypothesis discovered during validation; it is **not shipped functionality**.
 
-## 2026-09-24 10× integration
-
-The current state now includes the Habitat 10× package, applied within the existing product boundary:
-
-- optional local external tip anchoring via `habitat.anchor`
-- Hermes post-action/in-process bridge and signed HMAC event adapter
-- reusable evidence-policy presets for run binding, drift/skip rejection, auth outcomes, and evidence freshness
-- read-only agentscope proof source plus integration instructions/config
-- CI workflow for proof + optional tip verification
-- release-proof / handoff / rescue monetization artifacts as explicit hypotheses, not traction claims
-
-### Assurance boundary
-
-The verifier now distinguishes:
-
-- structural validity
-- content integrity
-- internal consistency
-- signature presence/cryptographic validity
-- publisher trust
-- external-world truth
-
-A signature that verifies cryptographically is **not** automatically publisher-trusted. Trust requires an explicit trust registry.
-
-### Integration boundary
-
-- Hermes integration is production-shaped but **not claimed as live production wiring** until exercised against a real Hermes installation.
-- agentscope integration is read-only and documented; its separate repository is **not claimed as merged**.
-- tip anchoring is local-first and optional; no external anchoring service is assumed.
-- monetization material is a testable cashflow hypothesis, not evidence of paying customers.
-
-## Verified repository facts
+## Verified live state
 
 - `main` is the default branch and the repository is public and unarchived.
-- Package version is `1.3.0` with no required runtime dependencies.
-- SQLite is the durable local store.
-- OTel-style GenAI spans can be bridged into Habitat using an existing trace ID as Habitat run ID.
-- Claims can be bound to exact runs/correlations and checked against recorded evidence.
-- The action ledger has tamper-evident SHA-256 chaining and integrity checks.
-- Portable proof bundles can be exported and verified without the producer's database, server, or Habitat installation.
-- Optional Ed25519 signing and an explicit trust registry exist; signature presence, cryptographic verification, publisher trust, and external-world truth are separate assurance levels.
-- A standalone GitHub Actions proof-verification workflow is now included.
-- Public site: `https://habitat-za.vercel.app`.
+- `https://habitat-za.vercel.app` was browser-verified after the repository became public.
+- Landing, dashboard, proof interaction, tamper simulation, reset, JSON download, responsive behavior and the GitHub CTA were exercised successfully.
+- The GitHub CTA reaches the public canonical repository.
+- The dashboard explicitly discloses that the live backend is unavailable and falls back to checked-in demo proof; it is not presented as live backend data.
+
+## 10× integration boundary
+
+- optional local external tip anchoring via `habitat.anchor`
+- Hermes bridge/adapter is production-shaped but not claimed live until exercised against a real Hermes installation
+- reusable evidence-policy presets
+- read-only AgentScope proof source/integration guidance
+- proof + optional tip verification workflows
+- monetization material remains hypothesis, not traction
+
+## Reconciliation finding
+
+The live verification did not exercise the Evidence archive route. Repository inspection then found that the previous public archive contained stale/mislabeled proof paths: multiple paths pointed to identical payloads whose claim/run identity belonged to a different project. The previous “22 proofs / 8 projects” presentation was therefore not safe to claim as evidence.
+
+The public Evidence surface and manifest have now been narrowed to the two artifacts whose checked-in path, run ID and claim were directly reconciled during this pass. The remaining historical proof paths are deliberately excluded rather than relabeled or replaced with invented evidence.
+
+## Assurance boundary
+
+The verifier distinguishes structural validity, content integrity, internal consistency, signature presence/cryptographic validity, publisher trust, and external-world truth. A cryptographically valid signature is not automatically publisher-trusted.
 
 ## Immediate next action
 
-**Verify the integrated state before feature expansion.** Run the core suite, the anchor tests, the proof-signature assurance regression, Hermes local prove smoke, and the web deployment/route checks. Record discrepancies before adding features.
+Re-verify the corrected Evidence route and manifest in the live deployment, then inspect the current CI/build state on the resulting commit. After that, decide whether the excluded historical proof artifacts should be repaired, removed, or retained as explicitly unverified history.
 
 ## Anti-drift rule
 
 > **Never make the project look more complete than it actually is.**
 
 No fake functionality, metrics, verification, security claims, or undocumented assumptions.
-
-
-## 2026-09-24 10× integration
-
-The Habitat 10× package has been applied to the existing product boundary: optional local tip anchoring, Hermes bridge/adapter examples, evidence-policy presets, read-only agentscope proof ingestion guidance, proof/tip CI verification, and monetization experiment artifacts.
-
-### Boundaries
-- Habitat remains local-first; no hosted control plane or product rename.
-- Hermes wiring is production-shaped but not claimed as live until exercised against a real Hermes installation.
-- agentscope integration is read-only and its separate repository is not claimed as merged.
-- Tip anchoring is optional and local-first; no external anchoring service is assumed.
-- Monetization documents are hypotheses, not evidence of paying customers.
-
-## Immediate next action
-
-Verify the integrated state before feature expansion: core tests, anchor tests, proof-signature assurance regression, Hermes local-prove smoke, CI workflow, and live web/deployment route checks.
-
-> Never make the project look more complete than it actually is.
