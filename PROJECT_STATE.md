@@ -4,7 +4,7 @@
 **Recorded:** 2026-09-25  
 **Repository:** `buttercode101/Habitat`  
 **Branch:** `main`  
-**Current commit:** `555490d13b1045ef86d517a77b6c07a26681a4ad`
+**Repository tip:** verify `main` directly before acting; this record intentionally avoids a self-referential commit hash.
 
 ## Verified facts
 
