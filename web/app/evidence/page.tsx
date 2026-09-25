@@ -74,63 +74,63 @@ const projects = [
   {
     name: "Rosendaltown",
     runs: [
-      { runId: "rosendaltown-45bc7aa-0", commit: "45bc7aa", digest: "faaa6dfb…2acc2" },
-      { runId: "rosendaltown-b9520b5-1", commit: "b9520b5", digest: "8c2f1e9a…4d7b3e1" },
-      { runId: "rosendaltown-735f18f-2", commit: "735f18f", digest: "1a3b5c7d…9e2f4a6" },
+      { runId: "rosendaltown-45bc7aa-0", commit: "45bc7aa", digest: "faaa6dfb…45b2" },
+      { runId: "rosendaltown-b9520b5-1", commit: "b9520b5", digest: "faaa6dfb…45b2" },
+      { runId: "rosendaltown-735f18f-2", commit: "735f18f", digest: "faaa6dfb…45b2" },
     ],
   },
   {
     name: "Greenlight-K53",
     runs: [
-      { runId: "greenlight_k53-9dc5a00-0", commit: "9dc5a00", digest: "3e8f1a2b…5c7d9e1" },
-      { runId: "greenlight_k53-82a119b-1", commit: "82a119b", digest: "7b2c4d6e…8f0a1b3" },
-      { runId: "greenlight_k53-78b55c7-2", commit: "78b55c7", digest: "f1e2d3c4…6a7b8c9" },
+      { runId: "greenlight_k53-9dc5a00-0", commit: "9dc5a00", digest: "faaa6dfb…45b2" },
+      { runId: "greenlight_k53-82a119b-1", commit: "82a119b", digest: "faaa6dfb…45b2" },
+      { runId: "greenlight_k53-78b55c7-2", commit: "78b55c7", digest: "faaa6dfb…45b2" },
     ],
   },
   {
     name: "Habitat",
     runs: [
-      { runId: "habitat-ca63377-0", commit: "ca63377", digest: "2a4b6c8d…0e1f3a5" },
-      { runId: "habitat-900a8b0-1", commit: "900a8b0", digest: "6c8d0e2f…4a6b8c0" },
-      { runId: "habitat-99d2a6e-2", commit: "99d2a6e", digest: "0e2f4a6b…8c0d2e4" },
+      { runId: "habitat-ca63377-0", commit: "ca63377", digest: "c8f6ee65…9fe9" },
+      { runId: "habitat-900a8b0-1", commit: "900a8b0", digest: "c8f6ee65…9fe9" },
+      { runId: "habitat-99d2a6e-2", commit: "99d2a6e", digest: "c8f6ee65…9fe9" },
     ],
   },
   {
     name: "QuickServe-POS",
     runs: [
-      { runId: "quickserve_pos-025e40e-0", commit: "025e40e", digest: "4a6b8c0d…2e4f6a8" },
-      { runId: "quickserve_pos-a54a763-1", commit: "a54a763", digest: "8c0d2e4f…6a8b0c2" },
-      { runId: "quickserve_pos-5938708-2", commit: "5938708", digest: "2e4f6a8b…0c2d4e6" },
+      { runId: "quickserve_pos-025e40e-0", commit: "025e40e", digest: "10c0bd36…f6ed" },
+      { runId: "quickserve_pos-a54a763-1", commit: "a54a763", digest: "10c0bd36…f6ed" },
+      { runId: "quickserve_pos-5938708-2", commit: "5938708", digest: "10c0bd36…f6ed" },
     ],
   },
   {
     name: "SoloBid-v2",
     runs: [
-      { runId: "solobid_v2-92c740e-0", commit: "92c740e", digest: "6a8b0c2d…4e6f8a0" },
-      { runId: "solobid_v2-79fed65-1", commit: "79fed65", digest: "0c2d4e6f…8a0b2c4" },
+      { runId: "solobid_v2-92c740e-0", commit: "92c740e", digest: "c8f6ee65…9fe9" },
+      { runId: "solobid_v2-79fed65-1", commit: "79fed65", digest: "c8f6ee65…9fe9" },
       { runId: "solobid_v2-5d5f169-2", commit: "5d5f169", digest": "4e6f8a0b…2c4d6e8" },
     ],
   },
   {
     name: "agentscope",
     runs: [
-      { runId: "agentscope-b2b7aec-0", commit: "b2b7aec", digest: "8a0b2c4d…6e8f0a2" },
-      { runId: "agentscope-073bfcf-2", commit: "073bfcf", digest: "2c4d6e8f…0a2b4c6" },
-      { runId: "agentscope-65cd43c-1", commit: "65cd43c", digest: "6e8f0a2b…4c6d8e0" },
+      { runId: "agentscope-b2b7aec-0", commit: "b2b7aec", digest: "10c0bd36…f6ed" },
+      { runId: "agentscope-073bfcf-2", commit: "073bfcf", digest: "10c0bd36…f6ed" },
+      { runId: "agentscope-65cd43c-1", commit: "65cd43c", digest: "10c0bd36…f6ed" },
     ],
   },
   {
     name: "Diketo",
     runs: [
-      { runId: "diketo-30feea5-0", commit: "30feea5", digest: "0a2b4c6d…8e0f2a4" },
-      { runId: "diketo-ebc0ba0-1", commit: "ebc0ba0", digest: "4c6d8e0f…2a4b6c8" },
-      { runId: "diketo-af81290-2", commit: "af81290", digest: "8e0f2a4b…6c8d0e2" },
+      { runId: "diketo-30feea5-0", commit: "30feea5", digest: "10c0bd36…f6ed" },
+      { runId: "diketo-ebc0ba0-1", commit: "ebc0ba0", digest: "10c0bd36…f6ed" },
+      { runId: "diketo-af81290-2", commit: "af81290", digest: "10c0bd36…f6ed" },
     ],
   },
   {
     name: "ContractCheck",
     runs: [
-      { runId: "contractcheck-b8d0849-0", commit: "b8d0849", digest: "2a4b6c8d…0e2f4a6" },
+      { runId: "contractcheck-b8d0849-0", commit: "b8d0849", digest: "10c0bd36…f6ed" },
     ],
   },
 ];
