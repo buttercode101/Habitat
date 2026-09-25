@@ -13,7 +13,7 @@
 
 Habitat is the implemented product. The public deployment and reconciled Evidence surface have been independently browser-verified. The repository's current `main` commit is:
 
-`aa1a6f25fd8a6f970e8b40f540d4c44d24ee37d9`
+`555490d13b1045ef86d517a77b6c07a26681a4ad`
 
 The current CI matrix is green on Python 3.10–3.13 plus dependency audit.
 
