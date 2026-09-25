@@ -1,109 +1,19 @@
 {
   "base_url": "https://habitat-za.vercel.app",
-  "generated": "2026-09-24T22:53:00Z",
+  "generated": "2026-09-25T04:00:00Z",
+  "status": "reconciled-subset",
+  "note": "Only artifacts whose checked-in path, run ID and claim were reconciled are listed. Historical paths are excluded until provenance is repaired.",
   "projects": {
-    "agentscope": [
-      {
-        "run_id": "agentscope-65cd43c-1",
-        "proof_url": "https://habitat-za.vercel.app/proofs/agentscope/agentscope-65cd43c-1/proof.json"
-      },
-      {
-        "run_id": "agentscope-073bfcf-2",
-        "proof_url": "https://habitat-za.vercel.app/proofs/agentscope/agentscope-073bfcf-2/proof.json"
-      },
-      {
-        "run_id": "agentscope-b2b7aec-0",
-        "proof_url": "https://habitat-za.vercel.app/proofs/agentscope/agentscope-b2b7aec-0/proof.json"
-      }
-    ],
-    "Diketo": [
-      {
-        "run_id": "diketo-ebc0ba0-1",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Diketo/diketo-ebc0ba0-1/proof.json"
-      },
-      {
-        "run_id": "diketo-af81290-2",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Diketo/diketo-af81290-2/proof.json"
-      },
-      {
-        "run_id": "diketo-30feea5-0",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Diketo/diketo-30feea5-0/proof.json"
-      }
-    ],
-    "Habitat": [
-      {
-        "run_id": "habitat-900a8b0-1",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Habitat/habitat-900a8b0-1/proof.json"
-      },
-      {
-        "run_id": "habitat-99d2a6e-2",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Habitat/habitat-99d2a6e-2/proof.json"
-      },
-      {
-        "run_id": "habitat-ca63377-0",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Habitat/habitat-ca63377-0/proof.json"
-      }
-    ],
-    "ContractCheck": [
-      {
-        "run_id": "contractcheck-b8d0849-0",
-        "proof_url": "https://habitat-za.vercel.app/proofs/ContractCheck/contractcheck-b8d0849-0/proof.json"
-      }
-    ],
-    "Rosendaltown": [
-      {
-        "run_id": "rosendaltown-735f18f-2",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Rosendaltown/rosendaltown-735f18f-2/proof.json"
-      },
-      {
-        "run_id": "rosendaltown-45bc7aa-0",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Rosendaltown/rosendaltown-45bc7aa-0/proof.json"
-      },
-      {
-        "run_id": "rosendaltown-b9520b5-1",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Rosendaltown/rosendaltown-b9520b5-1/proof.json"
-      }
-    ],
     "Greenlight-K53": [
       {
         "run_id": "greenlight_k53-9dc5a00-0",
         "proof_url": "https://habitat-za.vercel.app/proofs/Greenlight-K53/greenlight_k53-9dc5a00-0/proof.json"
-      },
-      {
-        "run_id": "greenlight_k53-82a119b-1",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Greenlight-K53/greenlight_k53-82a119b-1/proof.json"
-      },
-      {
-        "run_id": "greenlight_k53-78b55c7-2",
-        "proof_url": "https://habitat-za.vercel.app/proofs/Greenlight-K53/greenlight_k53-78b55c7-2/proof.json"
       }
     ],
-    "SoloBid-v2": [
+    "Diketo": [
       {
-        "run_id": "solobid_v2-79fed65-1",
-        "proof_url": "https://habitat-za.vercel.app/proofs/SoloBid-v2/solobid_v2-79fed65-1/proof.json"
-      },
-      {
-        "run_id": "solobid_v2-92c740e-0",
-        "proof_url": "https://habitat-za.vercel.app/proofs/SoloBid-v2/solobid_v2-92c740e-0/proof.json"
-      },
-      {
-        "run_id": "solobid_v2-5d5f169-2",
-        "proof_url": "https://habitat-za.vercel.app/proofs/SoloBid-v2/solobid_v2-5d5f169-2/proof.json"
-      }
-    ],
-    "QuickServe-POS": [
-      {
-        "run_id": "quickserve_pos-a54a763-1",
-        "proof_url": "https://habitat-za.vercel.app/proofs/QuickServe-POS/quickserve_pos-a54a763-1/proof.json"
-      },
-      {
-        "run_id": "quickserve_pos-025e40e-0",
-        "proof_url": "https://habitat-za.vercel.app/proofs/QuickServe-POS/quickserve_pos-025e40e-0/proof.json"
-      },
-      {
-        "run_id": "quickserve_pos-5938708-2",
-        "proof_url": "https://habitat-za.vercel.app/proofs/QuickServe-POS/quickserve_pos-5938708-2/proof.json"
+        "run_id": "diketo-30feea5-0",
+        "proof_url": "https://habitat-za.vercel.app/proofs/Diketo/diketo-30feea5-0/proof.json"
       }
     ]
   }
