@@ -1,15 +1,18 @@
 # Habitat — Roadmap / Work Control
 
-This is a **decision roadmap**, not a feature wishlist.
+This is a decision roadmap, not a feature wishlist.
 
 ## NOW — Reconcile the baseline
 
-- [ ] Verify current repository tree against this map.
-- [ ] Run/inspect the current test and CI state.
-- [ ] Verify proof producer and standalone verifier agree on supported behavior.
-- [ ] Verify the public web build/deployment state.
-- [ ] Identify stale, duplicate, or contradictory documentation.
-- [ ] Record every material discrepancy before fixing it.
+- [x] Verify the current repository/control documents against implementation.
+- [x] Verify the public web deployment independently.
+- [x] Verify the public GitHub CTA after repository visibility changed.
+- [x] Exercise the proof inspector, tamper simulation, reset and JSON download.
+- [x] Identify stale/contradictory public proof-archive content.
+- [x] Narrow the public Evidence surface to directly reconciled artifacts.
+- [x] Narrow the public proof manifest to the same reconciled subset.
+- [ ] Re-verify the corrected Evidence route and manifest in production.
+- [ ] Confirm current CI/build state on the reconciled commit.
 
 **Exit condition:** we can state what Habitat currently does, what is verified, and what remains unknown without relying on the old conversation.
 
@@ -24,57 +27,18 @@ This is a **decision roadmap**, not a feature wishlist.
 
 ## VALIDATE — Truth Layer hypothesis
 
-Run the five experiments in `PROJECT_MAP.md`:
-
-1. cold takeover;
-2. truth decay;
-3. agent switching;
-4. broken-project rescue;
-5. buyer/economic-value test.
-
-Record measured outcomes. Do not convert demonstrations into claims of product-market fit.
+Run the five experiments in PROJECT_MAP.md: cold takeover, truth decay, agent switching, broken-project rescue, and buyer/economic-value test. Record measured outcomes. Do not convert demonstrations into product-market-fit claims.
 
 ## DECIDE — Product boundary
 
-Choose among evidence-backed outcomes:
-
-- Habitat remains a focused accountability/proof runtime;
-- Habitat becomes the technical foundation for a separately named Truth Layer product;
-- the Truth Layer hypothesis is narrowed or rejected;
-- another evidence-supported direction emerges.
-
-No rename or major rewrite before this decision.
+Choose among evidence-backed outcomes only after the validation work. No rename or major rewrite before that decision.
 
 ## BUILD — Only after the decision
 
-Potential workstreams, only if validated:
-
-- project state model;
-- evidence provenance / freshness / staleness;
-- agent handoff protocol;
-- claim lifecycle;
-- verification transitions;
-- attestation / evidence packages;
-- CLI workflows;
-- integrations.
-
-Cloud, dashboards, billing, enterprise controls and broad platform surfaces remain explicitly deferred until real usage demonstrates their necessity.
+Potential workstreams, only if validated: project state model, evidence freshness/staleness, handoff protocol, claim lifecycle, verification transitions, attestation/evidence packages, CLI workflows and integrations.
 
 ## Guardrails
 
-### Never do merely because it sounds impressive
-- add features to chase competitors;
-- build a dashboard because a SaaS product usually has one;
-- turn hypotheses into marketing claims;
-- add proprietary protocols where standards already solve the problem;
-- rename the product to fit an exciting discovery;
-- optimize for feature count instead of verified outcomes.
+Never add features to chase competitors, turn hypotheses into marketing claims, or optimize for feature count instead of verified outcomes.
 
-### Every material change should answer
-
-1. What problem does this solve?
-2. What evidence says the problem exists?
-3. Why does Habitat own this boundary?
-4. What existing standard/product should we integrate with instead?
-5. How will we verify the change?
-6. What project-state or decision record must change?
+Every material change must answer: what problem does this solve, what evidence says it exists, why Habitat owns this boundary, what should be integrated instead, how will the change be verified, and what project-state record must change.
