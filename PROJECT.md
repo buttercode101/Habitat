@@ -13,6 +13,8 @@ Before starting material work, read these in order:
 3. **`DECISIONS.md`** — durable decisions and unresolved questions.
 4. **`ROADMAP.md`** — current work control and gates.
 5. **`WORK_HISTORY.md`** — phase-based reconstruction of how the project evolved.
+6. **`PROJECT_STATE.md`** — current verified state snapshot.
+7. **`HANDOFF.md`** — restart and material-change procedure.
 
 The repository is the source of truth for implementation. These control documents are the source of truth for project context and decisions. When they disagree, inspect the implementation and reconcile the documents rather than guessing.
 
