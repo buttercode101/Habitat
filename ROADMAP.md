@@ -11,21 +11,23 @@ This is a decision roadmap, not a feature wishlist.
 - [x] Identify stale/contradictory public proof-archive content.
 - [x] Narrow the public Evidence surface to directly reconciled artifacts.
 - [x] Narrow the public proof manifest to the same reconciled subset.
-- [ ] Re-verify the corrected Evidence route and manifest in production.
-- [ ] Confirm current CI/build state on the reconciled commit.
+- [x] Re-verify the corrected Evidence route and manifest in production.
+- [x] Confirm current CI state on the current commit.
 
 **Exit condition:** we can state what Habitat currently does, what is verified, and what remains unknown without relying on the old conversation.
 
 ## NEXT — Establish a reproducible project-state workflow
 
-- [ ] Define the minimum project-state record needed for future Habitat work.
-- [ ] Make material changes update project state + decision context.
-- [ ] Keep history append-only where useful; never silently rewrite why a decision was made.
-- [ ] Establish a compact handoff/restart procedure for future agents.
+- [x] Define the minimum project-state record needed for future Habitat work.
+- [x] Make material changes update project state + decision context.
+- [x] Keep history append-only where useful; never silently rewrite why a decision was made.
+- [x] Establish a compact handoff/restart procedure for future agents.
 
 **Exit condition:** a fresh agent can enter the repo and continue correctly from repository state alone.
 
 ## VALIDATE — Truth Layer hypothesis
+
+**Status:** deliberately open. No experiment is marked complete without measured evidence recorded in the repository.
 
 Run the five experiments in PROJECT_MAP.md: cold takeover, truth decay, agent switching, broken-project rescue, and buyer/economic-value test. Record measured outcomes. Do not convert demonstrations into product-market-fit claims.
 
