@@ -22,6 +22,7 @@ The current product is **Habitat**. Forge / project-truth-layer remains a produc
 - `https://habitat-za.vercel.app` was browser-verified after the repository became public.
 - Landing, dashboard, proof interaction, tamper simulation, reset, JSON download, responsive behavior and the GitHub CTA were exercised successfully.
 - The GitHub CTA reaches the public canonical repository.
+- GitHub Actions on commit `aa1a6f25fd8a6f970e8b40f540d4c44d24ee37d9` passed on Python 3.10, 3.11, 3.12, 3.13 and dependency audit.
 - The dashboard explicitly discloses that the live backend is unavailable and falls back to checked-in demo proof; it is not presented as live backend data.
 
 ## 10× integration boundary
@@ -43,9 +44,13 @@ The public Evidence surface and manifest have now been narrowed to the two artif
 
 The verifier distinguishes structural validity, content integrity, internal consistency, signature presence/cryptographic validity, publisher trust, and external-world truth. A cryptographically valid signature is not automatically publisher-trusted.
 
-## Immediate next action
+## Current gate
 
-Re-verify the corrected Evidence route and manifest in the live deployment, then inspect the current CI/build state on the resulting commit. After that, decide whether the excluded historical proof artifacts should be repaired, removed, or retained as explicitly unverified history.
+The corrected Evidence route and manifest have been independently browser-verified, and the current CI matrix is green on Python 3.10–3.13 plus dependency audit. The reproducible project-state workflow is now documented in `PROJECT_STATE.md` and `HANDOFF.md`.
+
+## Remaining validation
+
+The Truth Layer experiments remain deliberately open: cold takeover, truth decay, agent switching, broken-project rescue, and buyer/economic-value testing. They are not product features and must not be described as completed until executed with recorded evidence.
 
 ## Anti-drift rule
 
