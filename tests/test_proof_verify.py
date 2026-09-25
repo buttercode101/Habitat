@@ -90,7 +90,7 @@ def test_verifier_rejects_modified_bundle():
     bundle["claim"]["status"] = "failed"
     result = verify_proof(bundle)
     assert result["valid"] is False
-    assert "content_sha256 mismatch" in result["errors"]
+    assert "content_sha256 mismatch - proof has been tampered with" in result["errors"]
 
 
 def test_verified_cannot_claim_failed_ledger():
