@@ -1,18 +1,19 @@
 name: tip-and-verify
 
-# Optional CI path: verify a checked-in proof and, when present, its tip file.
-# Does not require Habitat installed as a package — uses tools/verify_proof.py
-# and a tiny tip check that only needs the stdlib.
-
+# Verify checked-in Habitat proofs and optional proof tip files.
 on:
   push:
     paths:
       - "proofs/**"
       - "tools/verify_proof.py"
+      - "tools/verify_tip.py"
       - ".github/workflows/tip-and-verify.yml"
   pull_request:
     paths:
       - "proofs/**"
+      - "tools/verify_proof.py"
+      - "tools/verify_tip.py"
+      - ".github/workflows/tip-and-verify.yml"
   workflow_dispatch:
     inputs:
       proof_path:
@@ -36,47 +37,43 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify proofs (and optional tip files)
+      - name: Verify proofs and optional tip files
+        env:
+          PROOF_PATH: ${{ inputs.proof_path }}
         run: |
           set -euo pipefail
-          PROOFS="${{ github.event.inputs.proof_path }}"
-          if [ -z "$PROOFS" ]; then
-            mapfile -t FILES < <(find proofs -name '*.json' -type f | sort)
+          if [ -n "$PROOF_PATH" ]; then
+            FILES=("$PROOF_PATH")
           else
-            FILES=("$PROOFS")
+            mapfile -t FILES < <(find proofs -name '*.json' -type f | sort)
           fi
-          if [ ${#FILES[@]} -eq 0 ]; then
+
+          if [ "${#FILES[@]}" -eq 0 ]; then
             echo "No proof files found; nothing to verify."
             exit 0
           fi
+
           fail=0
           for f in "${FILES[@]}"; do
             echo "::group::verify $f"
-            python tools/verify_proof.py "$f" || fail=1
+            if ! python tools/verify_proof.py "$f"; then
+              fail=1
+            fi
+
             tip="${f%.json}.tip.json"
-            # also accept tip-<id>.json next to proof
             base=$(basename "$f" .json)
             dir=$(dirname "$f")
             alt="$dir/tip-${base#*-}.json"
+
             for t in "$tip" "$alt"; do
               if [ -f "$t" ]; then
                 echo "Checking tip file $t"
-                if ! python - << PY
-import json, sys
-proof = json.load(open("$f"))
-tip = json.load(open("$t"))
-expected = tip.get("tip")
-actual = proof.get("content_sha256")
-if not expected or expected != actual:
-    print(f"TIP MISMATCH: expected={expected!r} actual={actual!r}")
-    sys.exit(1)
-print("TIP OK")
-PY
-                then
+                if ! python tools/verify_tip.py "$f" "$t"; then
                   fail=1
                 fi
               fi
             done
             echo "::endgroup::"
           done
-          exit $fail
+
+          exit "$fail"
