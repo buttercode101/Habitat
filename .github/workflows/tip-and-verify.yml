@@ -39,7 +39,7 @@ jobs:
 
       - name: Verify proofs and optional tip files
         env:
-          PROOF_PATH: ${{ inputs.proof_path }}
+          PROOF_PATH: ${{ github.event.inputs.proof_path }}
         run: |
           set -euo pipefail
           if [ -n "$PROOF_PATH" ]; then
