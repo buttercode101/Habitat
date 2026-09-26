@@ -1,79 +1,31 @@
-# Contributing to Habitat
+# Contributing
 
-Thank you for your interest in Habitat. This document explains how to develop, test, and contribute changes.
+Thanks for taking the time to contribute.
 
-## Design principles
+## Before opening a pull request
 
-Please keep these constraints in mind:
+1. Read the repository README and relevant architecture/security documentation.
+2. Keep changes focused and explain the user-visible or correctness impact.
+3. Do not commit secrets, credentials, private evidence, generated state, or local databases.
+4. Add or update tests for behavior that changes.
+5. Run the repository verification commands locally.
 
-- **Local-first and minimal dependencies** — the core runtime uses only the Python standard library + SQLite. The only optional dependency is `cryptography` (for Ed25519 proof signing).
-- **Honest security boundaries** — document what Habitat does *not* prove. Do not over-claim.
-- **Portable proof** — a proof bundle must remain independently verifiable without the producer's database or network service.
-- **Protocol over plugins** — prefer a clean event/proof protocol that any agent stack can feed, rather than deep framework-specific integrations.
-- **Small surface area** — new features should earn their place.
+## Pull requests
 
-## Development setup
+A pull request should include:
 
-```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\\Scripts\\activate
-python -m pip install --upgrade pip
-pip install -e ".[signing]"
-pip install pytest
-```
+- what changed
+- why it changed
+- how it was verified
+- any compatibility or migration considerations
+- screenshots for meaningful UI changes, when useful
 
-## Running tests
+Keep the default branch releasable. Avoid speculative features that are not supported by the project's documented scope.
 
-```bash
-# Core suite (no extra deps required)
-python -m pytest -q
+## Security issues
 
-# Signing / trust tests (requires the optional extra)
-python -m pytest -q tests/test_proof_sign.py tests/test_trust.py
-```
+Do not disclose vulnerabilities in public issues. Follow the repository's SECURITY.md reporting guidance.
 
-CI runs the full matrix on Python 3.10–3.13 and includes a dependency audit.
+## Code quality
 
-## Useful local commands
-
-```bash
-# Initialize a demo habitat
-habitat init --config examples/simple.yaml
-
-# Run once
-habitat run
-
-# Continuous supervision loop
-habitat run --watch --interval 5
-
-# Generate the HTML supervision surface
-habitat generate -o dashboard.html
-
-# Doctor / health checks
-habitat doctor
-```
-
-## Pull request checklist
-
-- [ ] Tests cover new verification, security, ledger, or protocol behavior.
-- [ ] `CHANGELOG.md` updated under an `## Unreleased` (or next version) heading.
-- [ ] Documentation updated when behavior or public contracts change.
-- [ ] No secrets or agent credentials committed.
-- [ ] Code stays readable and avoids unnecessary abstraction.
-
-## Security-sensitive changes
-
-Changes that affect:
-
-- event signature verification
-- action ledger integrity
-- claim verification logic
-- proof format or the standalone verifier
-- agent authentication / permissions
-- HTTP evidence adapters
-
-require careful review and strong regression tests. Prefer explicit, conservative defaults.
-
-## Code of conduct
-
-Be respectful. Focus on technical merit and clear communication.
+Prefer small, explicit changes over clever abstractions. Preserve existing boundaries, deterministic behavior and documented security assumptions.
