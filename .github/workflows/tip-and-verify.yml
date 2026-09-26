@@ -61,7 +61,7 @@ jobs:
             for t in "$tip" "$alt"; do
               if [ -f "$t" ]; then
                 echo "Checking tip file $t"
-                python - << PY
+                if ! python - << PY
 import json, sys
 proof = json.load(open("$f"))
 tip = json.load(open("$t"))
@@ -72,7 +72,9 @@ if not expected or expected != actual:
     sys.exit(1)
 print("TIP OK")
 PY
-                || fail=1
+                then
+                  fail=1
+                fi
               fi
             done
             echo "::endgroup::"
