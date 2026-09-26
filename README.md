@@ -2,21 +2,83 @@
 
 **A local-first supervision and evidence runtime for autonomous agents.**
 
-> Agents can tell you what they did. Habitat helps you verify whether the record supports the claim.
+Habitat records trusted agent actions, correlates work with run IDs, verifies claims against an evidence ledger or explicit external evidence, and produces portable proof that another machine can independently check.
 
-**Live site:** https://habitat-za.vercel.app
-
-Habitat is deliberately smaller than a full observability or orchestration platform. It records trusted actions locally, accepts authenticated structured events, correlates work with run IDs, verifies claims against a tamper-evident action ledger or explicit external evidence, and raises supervision signals when behavior needs attention.
+[Live application](https://habitat-za.vercel.app) · [Quick start](#quick-start) · [Protocol](PROTOCOL.md) · [Security](SECURITY.md) · [MIT license](LICENSE)
 
 ## Why Habitat exists
 
-Agent observability is becoming crowded: platforms such as LangSmith and Langfuse focus on tracing, monitoring, evaluation, cost, and production debugging. Habitat starts one layer closer to accountability: **when an agent says “I did X,” what evidence does the system actually have for that statement?**
+Agents can report what they did. Habitat focuses on a narrower question:
 
-That distinction is intentional. Habitat is not trying to replace tracing, evals, or orchestration. It can sit underneath or beside those systems as a small evidence and supervision layer, especially where local-first operation and deterministic verification matter.
+> **What evidence does the system actually have for that claim?**
 
-## Interoperability first
+Habitat is not an orchestration platform, general tracing product, or replacement for an existing agent framework. It is an accountability and verification layer that can sit beside an agent runtime and existing telemetry.
 
-Habitat does not invent another tracing protocol. `habitat.otel` provides a dependency-free bridge for OTel-style GenAI spans, using an existing `trace_id` as the Habitat `run_id` and projecting only accountability-relevant operations. See `OTEL.md`, `ADOPTION.md`, and `examples/otel_bridge.py`.
+## Core model
+
+```text
+Agent → Event → Habitat ledger → Integrity → Verification → Signal → Human
+                         ↓
+                       SQLite
+```
+
+The design is local-first, deterministic and intentionally explicit about what can and cannot be proven.
+
+## What Habitat provides
+
+- **Trusted action recording** in a local SQLite ledger.
+- **Run correlation** using stable run IDs.
+- **Integrity checks** over recorded actions.
+- **Claim verification** against recorded evidence or explicit external evidence adapters.
+- **Portable proof bundles** that can be verified without the producer database or network service.
+- **OTel-style interoperability** through the dependency-free `habitat.otel` bridge.
+- **CI verification** for checked-in proof artifacts.
+- **Supervision signals** when recorded behavior needs attention.
+
+## What Habitat proves — and does not
+
+Habitat can establish that a matching action was recorded, that the ledger is internally consistent, that a claim matches an exact run when a run ID is supplied, or that an explicit evidence adapter returned an expected result.
+
+Habitat does **not** establish that an agent's private reasoning was correct, that a compromised host is trustworthy, or that a local database is independently anchored cryptographic truth.
+
+These boundaries are part of the product contract, not footnotes.
+
+## Quick start
+
+Requirements:
+
+- Python 3.10+
+- SQLite (included with Python)
+- No third-party runtime dependencies
+
+Install the project according to the repository's packaging configuration, then run:
+
+```bash
+python -m pytest -q
+```
+
+### Generate portable proof
+
+```bash
+habitat prove \
+  --run-id run-42 \
+  --claim "deployed v1.2.3 to production" \
+  -o proof.json --card
+
+python tools/verify_proof.py proof.json
+```
+
+For an executable end-to-end example:
+
+```bash
+python examples/prove_run.py
+```
+
+Portable proof can be checked on another machine without access to the producer's database or network service.
+
+## OpenTelemetry interoperability
+
+Habitat does not require a new tracing protocol.
 
 ```text
 Agent / framework
@@ -28,90 +90,33 @@ Habitat bridge
 Trusted ledger → Verification → Portable proof
 ```
 
-## Core model
+See [OTEL.md](OTEL.md), [ADOPTION.md](ADOPTION.md), and [examples/otel_bridge.py](examples/otel_bridge.py).
 
-```text
-Agent → Event → Habitat ledger → Integrity → Verification → Signal → Human
-                         ↓
-                       SQLite
-```
+## Verification
 
-## Prove a run in 30 seconds
+The repository includes automated tests and an independent proof verifier. GitHub Actions can verify a checked-in `proof.json` without installing Habitat's runtime dependencies.
 
-When a run has been recorded in Habitat, create a portable proof and a short card you can paste into a PR, issue, or Slack message:
+Read [VERIFY_PROOF.md](VERIFY_PROOF.md) and [PROOF.md](PROOF.md) for the verification contract.
 
-```bash
-habitat prove \
-  --run-id run-42 \
-  --claim "deployed v1.2.3 to production" \
-  -o proof.json --card
+## Documentation
 
-python tools/verify_proof.py proof.json
-```
+- [PROJECT.md](PROJECT.md) — project scope and operating model
+- [PROTOCOL.md](PROTOCOL.md) — event and protocol contract
+- [ARCHITECTURE.md](ARCHITECTURE.md) — system boundaries
+- [SECURITY.md](SECURITY.md) — threat model and security principles
+- [PROOF.md](PROOF.md) — proof model
+- [VERIFY_PROOF.md](VERIFY_PROOF.md) — independent verification
+- [ADOPTION.md](ADOPTION.md) — integration path
+- [CHANGELOG.md](CHANGELOG.md) — release history
 
-The `prove` command binds the claim to the supplied run ID, verifies the recorded evidence, exports `proof.json`, and can emit a compact `proof.md` card. The standalone verifier checks the portable bundle without needing the producer's database or network service.
+## Contributing
 
-For a complete executable example:
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
-```bash
-python examples/prove_run.py
-```
+## Security
 
-## Portable proof exchange
-
-Habitat can export a portable `proof.json` that another machine can verify without access to the producer's database or network service.
-
-```text
-Producer agent
-      ↓
-Habitat
-      ↓
-proof.json
-      ↓
-Any machine / CI system
-      ↓
-python tools/verify_proof.py proof.json
-      ↓
-VALID / INVALID
-```
-
-The producer CLI also supports direct export from an existing claim:
-
-```bash
-habitat proof <claim-id> --output proof.json
-```
-
-The repository includes a GitHub Actions workflow that can verify a checked-in `proof.json` (or a manually selected proof path). This makes proof verification usable as a CI gate without installing Habitat or its runtime dependencies.
-
-See `VERIFY_PROOF.md`, `ADOPTION.md`, and `examples/proof_exchange.py`.
-
-## What Habitat proves — and what it does not
-
-Habitat can establish that a matching action was recorded, that the action ledger is internally consistent, that a claim matches an exact run when a run ID is supplied, or that an explicit external evidence adapter returned the expected result.
-
-Habitat does **not** prove that an agent's private reasoning was correct, that a compromised host is trustworthy, or that a local database has independently anchored cryptographic truth. Those boundaries are deliberate and documented in `SECURITY.md`.
-
-## Adoption
-
-Keep the existing agent framework and observability stack. Add Habitat where a claim needs evidence another system can independently inspect. The intended path is **existing telemetry → Habitat accountability → verification → portable proof**, not framework replacement. See `ADOPTION.md`.
-
-## Requirements
-
-- Python 3.10+
-- No third-party runtime dependencies
-- SQLite (included with Python)
-
-## Development
-
-```bash
-python -m pytest -q
-```
-
-See `PROJECT.md`, `PROTOCOL.md`, `ARCHITECTURE.md`, `SECURITY.md`, `PROOF.md`, and `ADOPTION.md` for the design and operating boundaries.
+Please report suspected vulnerabilities privately. Never include real credentials, tokens, private agent transcripts or sensitive evidence in public issues.
 
 ## License
 
-MIT.
-
-
-<!-- Deployment verification: 2026-09-24 -->
+Habitat is released under the MIT License. See [LICENSE](LICENSE).
