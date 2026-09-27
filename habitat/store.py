@@ -37,6 +37,17 @@ def _dt(value):
     return datetime.fromisoformat(value) if value else None
 
 
+def _json_object(value: str, field: str) -> dict[str, Any]:
+    """Decode persisted JSON and fail with a useful storage error."""
+    try:
+        decoded = json.loads(value)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"corrupt_json:{field}") from exc
+    if not isinstance(decoded, dict):
+        raise RuntimeError(f"invalid_json_object:{field}")
+    return decoded
+
+
 class Store:
     def __init__(self, path):
         self.path = Path(path)
@@ -98,7 +109,7 @@ class Store:
         rows = self.conn.execute("SELECT * FROM action ORDER BY timestamp,id").fetchall()
         prev = None
         for r in rows:
-            a = Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], json.loads(r["details"]), r["run_id"])
+            a = Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], _json_object(r["details"], "action.details"), r["run_id"])
             digest = self._action_hash(a, prev)
             self.conn.execute("INSERT INTO action_integrity(action_id,prev_hash,hash) VALUES(?,?,?)", (a.id, prev, digest))
             prev = digest
@@ -149,15 +160,15 @@ class Store:
         return [Job(r["id"], r["habitat_id"], r["name"], r["schedule"], bool(r["enabled"]), r["command"], _dt(r["last_run_at"]), r["last_status"], r["failure_streak"], r["last_error"]) for r in self.conn.execute("SELECT * FROM job ORDER BY name")]
 
     def signals(self):
-        return [Signal(r["id"], r["habitat_id"], r["type"], r["severity"], r["code"], r["message"], r["job_id"], _dt(r["detected_at"]), _dt(r["resolved_at"]), json.loads(r["data"])) for r in self.conn.execute("SELECT * FROM signal ORDER BY detected_at DESC")]
+        return [Signal(r["id"], r["habitat_id"], r["type"], r["severity"], r["code"], r["message"], r["job_id"], _dt(r["detected_at"]), _dt(r["resolved_at"]), _json_object(r["data"], "signal.data")) for r in self.conn.execute("SELECT * FROM signal ORDER BY detected_at DESC")]
 
     def actions(self, limit=50):
-        return [Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], json.loads(r["details"]), r["run_id"]) for r in self.conn.execute("SELECT * FROM action ORDER BY timestamp DESC LIMIT ?", (limit,))]
+        return [Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], _json_object(r["details"], "action.details"), r["run_id"]) for r in self.conn.execute("SELECT * FROM action ORDER BY timestamp DESC LIMIT ?", (limit,))]
 
     def actions_for_run(self, run_id):
         if not run_id:
             return []
-        return [Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], json.loads(r["details"]), r["run_id"]) for r in self.conn.execute("SELECT * FROM action WHERE run_id=? ORDER BY timestamp,id", (run_id,))]
+        return [Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], _json_object(r["details"], "action.details"), r["run_id"]) for r in self.conn.execute("SELECT * FROM action WHERE run_id=? ORDER BY timestamp,id", (run_id,))]
 
     def matching_actions(self, habitat_id, job_id=None, action=None, run_id=None, limit=5000):
         clauses = ["habitat_id=?"]
@@ -170,13 +181,13 @@ class Store:
             clauses.append("run_id=?"); params.append(run_id)
         sql = "SELECT * FROM action WHERE " + " AND ".join(clauses) + " ORDER BY timestamp,id LIMIT ?"
         params.append(limit)
-        return [Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], json.loads(r["details"]), r["run_id"]) for r in self.conn.execute(sql, params)]
+        return [Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], _json_object(r["details"], "action.details"), r["run_id"]) for r in self.conn.execute(sql, params)]
 
     def get_claim(self, claim_id):
         r = self.conn.execute("SELECT * FROM claim WHERE id=?", (claim_id,)).fetchone()
         if not r:
             return None
-        return Claim(r["id"], r["habitat_id"], r["job_id"], r["claim"], r["action"], r["expected_status"], _dt(r["created_at"]), _dt(r["verified_at"]), r["status"], json.loads(r["evidence"]), r["run_id"])
+        return Claim(r["id"], r["habitat_id"], r["job_id"], r["claim"], r["action"], r["expected_status"], _dt(r["created_at"]), _dt(r["verified_at"]), r["status"], _json_object(r["evidence"], "claim.evidence"), r["run_id"])
 
     def save_claim(self, c):
         self.conn.execute("INSERT OR REPLACE INTO claim VALUES (?,?,?,?,?,?,?,?,?,?,?)", (c.id, c.habitat_id, c.job_id, c.claim, c.action, c.expected_status, c.created_at.isoformat(), c.verified_at.isoformat() if c.verified_at else None, c.status, json.dumps(c.evidence), c.run_id))
@@ -184,7 +195,7 @@ class Store:
             self.conn.commit()
 
     def claims(self, limit=100):
-        return [Claim(r["id"], r["habitat_id"], r["job_id"], r["claim"], r["action"], r["expected_status"], _dt(r["created_at"]), _dt(r["verified_at"]), r["status"], json.loads(r["evidence"]), r["run_id"]) for r in self.conn.execute("SELECT * FROM claim ORDER BY created_at DESC LIMIT ?", (limit,))]
+        return [Claim(r["id"], r["habitat_id"], r["job_id"], r["claim"], r["action"], r["expected_status"], _dt(r["created_at"]), _dt(r["verified_at"]), r["status"], _json_object(r["evidence"], "claim.evidence"), r["run_id"]) for r in self.conn.execute("SELECT * FROM claim ORDER BY created_at DESC LIMIT ?", (limit,))]
 
     def save_event(self, event_id, habitat_id, event_type, received_at, signature_valid, payload, agent_id=None):
         outer = self._transaction_depth == 0
@@ -209,7 +220,7 @@ class Store:
             raise
 
     def events(self, limit=100):
-        return [{"id": r["id"], "habitat_id": r["habitat_id"], "type": r["type"], "received_at": r["received_at"], "signature_valid": bool(r["signature_valid"]), "payload": json.loads(r["payload"]), "correlation_id": r["correlation_id"], "agent_id": r["agent_id"]} for r in self.conn.execute("SELECT * FROM event ORDER BY received_at DESC LIMIT ?", (limit,))]
+        return [{"id": r["id"], "habitat_id": r["habitat_id"], "type": r["type"], "received_at": r["received_at"], "signature_valid": bool(r["signature_valid"]), "payload": _json_object(r["payload"], "event.payload"), "correlation_id": r["correlation_id"], "agent_id": r["agent_id"]} for r in self.conn.execute("SELECT * FROM event ORDER BY received_at DESC LIMIT ?", (limit,))]
 
     def active_signals(self, limit=100):
         return [x for x in self.signals() if x.resolved_at is None][:limit]
@@ -284,7 +295,7 @@ class Store:
         if rows and len(rows) != self.conn.execute("SELECT COUNT(*) FROM action").fetchone()[0]:
             return False
         for r in rows:
-            a = Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], json.loads(r["details"]), r["run_id"])
+            a = Action(r["id"], r["habitat_id"], _dt(r["timestamp"]), r["actor"], r["action"], r["status"], r["job_id"], _json_object(r["details"], "action.details"), r["run_id"])
             if r["prev_hash"] != prev or r["hash"] != self._action_hash(a, prev):
                 return False
             prev = r["hash"]
