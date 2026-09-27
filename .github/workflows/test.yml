@@ -54,3 +54,23 @@ jobs:
           python -m pip install -e '.[signing]' pytest pip-audit
       - name: Audit installed dependencies
         run: python -m pip_audit --local
+
+  web-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d682002e1 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package.json
+      - name: Install web dependencies
+        working-directory: web
+        run: npm install --ignore-scripts
+      - name: Build web application
+        working-directory: web
+        run: npm run build
+      - name: Check web diff hygiene
+        run: git diff --check
