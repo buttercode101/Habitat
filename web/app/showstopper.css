@@ -140,6 +140,7 @@
 .proof-lines div > * { min-width: 0; overflow-wrap: anywhere; }
 .proof-lines b { max-width: 65%; text-align: right; }
 .proof-live { min-width: 0; flex-wrap: wrap; }
+.proof-live strong { margin-right: .35rem; }
 .proof-live span:last-child { min-width: 0; overflow-wrap: anywhere; }
 
 .trust-inner {
