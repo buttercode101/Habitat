@@ -194,7 +194,7 @@ export default function ProofDemo() {
           <Row label="Action" value={proof.claim.action} />
           <Row label="Run ID" value={proof.claim.run_id} />
           <Row label="Expected" value={proof.claim.expected_status} />
-          <Row label="Habitat status" value={proof.claim.status} />
+          <Row label="Supplied historical status" value={proof.claim.status} />
         </article>
         <article className="proof-card">
           <h2>Evidence</h2>
