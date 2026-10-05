@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ProofDemoPage() {
   return (
-    <main className="shell">
+    <main id="main-content" tabIndex={-1} className="shell">
       <header className="topbar">
         <Link className="brand" href="/">Habitat</Link>
         <span className="pill">PROOF INSPECTOR</span>
