@@ -55,3 +55,18 @@ def test_tampered_ledger_yields_inconclusive_proof(tmp_path):
     assert result['verdict'] == 'pending'
     assert result['ledger_integrity'] == 'failed'
     s.close()
+
+
+def test_external_inconclusive_response_keeps_current_and_stored_verdict_separate(tmp_path):
+    s = _store(tmp_path)
+    c = Claim.new('h1', 'external deployment passed', None, None, 'ok')
+    c.status = 'verified'
+    c.verified_at = utcnow()
+    c.evidence = {'source': 'github_commit', 'status': 'ok', 'query': 'owner/repo@abc', 'data': {'sha': 'abc'}}
+    s.save_claim(c)
+    result = verify_and_prove(s, c.id)
+    assert result['verdict'] != result['stored_verdict']
+    assert result['verdict'] == 'inconclusive'
+    assert result['stored_verdict'] == 'verified'
+    assert result['reverified'] is False
+    s.close()
