@@ -4,7 +4,7 @@ import ProofDemo from "./ProofDemo";
 
 export const metadata: Metadata = {
   title: "Habitat Proof Inspector",
-  description: "Inspect and verify a portable Habitat proof.",
+  description: "Inspect the integrity of a portable Habitat proof artifact.",
 };
 
 export default function ProofDemoPage() {
@@ -17,11 +17,11 @@ export default function ProofDemoPage() {
       <section className="hero compact">
         <Link className="back" href="/">← Back to Habitat</Link>
         <p className="eyebrow">Independent proof surface</p>
-        <h1>Inspect and verify a real Habitat proof.</h1>
-        <p className="lede">This page runs the proof check in your browser. No Habitat backend connection is required.</p>
+        <h1>Inspect a Habitat proof artifact.</h1>
+        <p className="lede">This page runs the artifact integrity check in your browser. No Habitat backend connection is required; external truth remains a separate assurance.</p>
       </section>
       <ProofDemo />
-      <footer><Link href="/">Habitat</Link> · The proof is independently verifiable in-browser.</footer>
+      <footer><Link href="/">Habitat</Link> · The artifact digest is independently verifiable in-browser.</footer>
     </main>
   );
 }
