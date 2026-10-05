@@ -33,7 +33,7 @@ export default function Home() {
           <h1>Don&apos;t just log what an agent did. <em>Prove it.</em></h1>
           <p className="marketing-lede">Habitat turns agent events into policy-checked claims and portable proof artifacts you can inspect, verify and carry outside the system that produced them.</p>
           <div className="hero-actions">
-            <Link className="button primary large" href="/dashboard#proof-demo">Inspect a real proof</Link>
+            <Link className="button primary large" href="/dashboard#proof-demo">Inspect a proof artifact</Link>
             <a className="button large" href={GITHUB_URL}>Get Habitat on GitHub ↗</a>
           </div>
           <p className="hero-note">Local-first · portable · no hosted control plane required</p>
@@ -42,7 +42,7 @@ export default function Home() {
           <div className="proof-window">
             <div className="window-bar"><span /><span /><span /><b>habitat proof</b></div>
             <div className="proof-status"><span className="status-dot" /> VERIFIED <small>portable proof</small></div>
-            <div className="proof-claim">Rosendaltown change <strong>45bc7aa7</strong> has a verified evidence trail.</div>
+            <div className="proof-claim">Rosendaltown artifact <strong>45bc7aa7</strong> has an integrity-checkable evidence trail.</div>
             <div className="proof-live"><span className="live-dot" /><strong>VERIFIED</strong><span>Habitat ledger · exact run correlation</span></div>
             <div className="proof-lines">
               <div><span>Evidence</span><b>trusted ledger</b></div>
