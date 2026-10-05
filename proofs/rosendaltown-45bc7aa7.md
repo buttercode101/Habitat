@@ -4,8 +4,8 @@
 
 | Check | Result |
 |---|---|
-| Habitat claim | `VERIFIED` |
-| Source | `habitat_trusted_ledger` |
+| Supplied Habitat claim status | `UNVERIFIED_EXTERNAL` |
+| Source | `habitat_supplied_ledger` |
 | Action | `rosendaltown-commit-45bc7aa7f945` |
 | Run binding | `45bc7aa7f9458ced34c97cd76a7e833c71632aaa` |
 | Ledger | `intact` |
