@@ -18,7 +18,7 @@ const DEMO_CLAIM: Claim = {
   run_id: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
   statement: "Shipped Rosendaltown change: corrected category image/content mapping and refreshed homepage imagery with the real Rosendal photos.",
   expected_status: "ok",
-  status: "verified",
+  status: "unverified",
 };
 
 export default async function DashboardPage() {
@@ -44,7 +44,7 @@ function DemoDashboard({ error }: { error: string }) {
       </section>
       <section className="metrics" aria-label="Demo proof status">
         <Metric label="Claims" value={1} />
-        <Metric label="Verified" value={1} />
+        <Metric label="Verified" value={0} />
         <Metric label="Ledger" value={1} />
         <Metric label="Mode" value="DEMO" />
       </section>
