@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
 function DemoDashboard({ error }: { error: string }) {
   return (
-    <main className="shell">
+    <main id="main-content" tabIndex={-1} className="shell">
       <header className="topbar"><Link className="brand" href="/">Habitat</Link><span className="pill">DEMO MODE</span></header>
       <section className="hero compact">
         <Link className="back" href="/">← Back to Habitat</Link>
