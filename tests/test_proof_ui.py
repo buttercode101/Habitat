@@ -61,4 +61,4 @@ def test_proof_inspector_does_not_turn_stored_verified_status_into_external_trut
     html = render_proof_inspector(payload)
     assert "External truth" in html
     assert "Publisher trust<b>unknown</b>" in html
-    assert "External truth<b>unknown</b>" in html
+    assert "External truth</span><b class=\"state-unknown\">unknown</b>" in html
