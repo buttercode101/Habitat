@@ -53,3 +53,12 @@ def test_proof_inspector_escapes_claims_and_path_identifiers():
     assert "claim&lt;&amp;" in html
     assert "Test &lt;Habitat&gt;" in html
     assert "claim<&" not in html
+
+
+def test_proof_inspector_does_not_turn_stored_verified_status_into_external_truth():
+    payload = _payload()
+    payload["proof"]["claim"]["status"] = "verified"
+    html = render_proof_inspector(payload)
+    assert "External truth" in html
+    assert "Publisher trust<b>unknown</b>" in html
+    assert "External truth<b>unknown</b>" in html
