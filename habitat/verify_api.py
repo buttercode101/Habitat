@@ -30,7 +30,8 @@ def verify_and_prove(
         proof = build_proof(store, claim.id)
         return {
             "claim_id": claim.id,
-            "verdict": claim.status,
+            "verdict": "inconclusive",
+            "stored_verdict": claim.status,
             "verified_at": claim.verified_at.isoformat() if claim.verified_at else None,
             "reverified": False,
             "reverify_reason": "external_evidence_requires_adapter",
