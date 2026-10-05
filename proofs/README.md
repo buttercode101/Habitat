@@ -1,6 +1,6 @@
-# Habitat real-work proofs
+# Habitat proof artifacts
 
-These artifacts record real work performed in other projects and verified by Habitat. They are intentionally conservative: a valid Habitat proof is not automatically a deployment attestation, publisher attestation, or statement of real-world truth.
+These artifacts preserve claims and evidence captured by Habitat. Their integrity can be checked independently; whether an external claim is true depends on separately resolvable evidence. They are intentionally conservative: a valid Habitat proof is not automatically a deployment attestation, publisher attestation, or statement of real-world truth.
 
 ## Current proof set
 
@@ -13,7 +13,7 @@ These artifacts record real work performed in other projects and verified by Hab
 
 ## Assurance model
 
-- **Habitat verified** means the claim matched Habitat's trusted ledger and the portable proof passed its integrity and consistency checks.
+- **Artifact VERIFIED** means the portable proof passed Habitat's integrity and internal-consistency checks. It does not, by itself, verify an external repository, deployment, publisher, or real-world event.
 - **External execution evidence** is reported only when an actual external status was observed for the referenced work.
 - **Publisher trust** is a separate question: a valid signature or proof does not, by itself, establish that the publisher is authorized or trustworthy.
 - **External truth** is also separate: evidence recorded by Habitat cannot prove facts that were never observed or independently attested.
