@@ -98,7 +98,7 @@ export default function Home() {
       <section className="final-cta shell-width">
         <p className="eyebrow">See it before you install it</p>
         <h2>Give one consequential agent action a proof.</h2>
-        <p>Inspect a real Habitat proof in your browser, change the evidence, and watch the integrity check fail. Then explore the live dashboard or install Habitat locally.</p>
+        <p>Inspect a checked-in Habitat proof artifact in your browser, change the evidence, and watch the integrity check fail. Then explore the live dashboard or install Habitat locally.</p>
         <div className="hero-actions"><Link className="button primary large" href="/dashboard#proof-demo">Open proof inspector</Link><Link className="button large" href="/dashboard">Open dashboard</Link><a className="button large" href={GITHUB_URL}>GitHub ↗</a></div>
       </section>
 
