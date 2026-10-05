@@ -12,7 +12,7 @@ const ORIGINAL = {
     job_id: null,
     claim: "Shipped Rosendaltown change: corrected category image/content mapping and refreshed homepage imagery with the real Rosendal photos.",
     action: "commit",
-    expected_status: "ok",
+    expected_status: "unverified_external",
     created_at: "2026-09-15T13:39:37.597558+00:00",
     verified_at: "2026-09-15T13:39:37.599886+00:00",
     status: "verified",
@@ -27,7 +27,7 @@ const ORIGINAL = {
         url: "https://github.com/buttercode101/rosendaltown/commit/45bc7aa7f9458ced34c97cd76a7e833c71632aaa"
       },
       run_id: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
-      source: "habitat_trusted_ledger",
+      source: "habitat_supplied_ledger",
       status: "ok",
       timestamp: "2026-09-15T13:39:37.000666+00:00"
     },
