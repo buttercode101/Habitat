@@ -124,7 +124,7 @@ export default function ProofDemo() {
   const [busy, setBusy] = useState(false);
 
   const tampered = proof.claim.evidence.details.summary !== ORIGINAL.claim.evidence.details.summary;
-  const status = useMemo(() => tampered ? "TAMPERED" : "VERIFIED", [tampered]);
+  const status = useMemo(() => tampered ? "TAMPERED" : verified === true ? "INTEGRITY VERIFIED" : "UNVERIFIED", [tampered, verified]);
 
   async function verify() {
     setBusy(true);
@@ -169,14 +169,14 @@ export default function ProofDemo() {
     <>
       <section className="inspector-head">
         <Link className="back" href="/">← Habitat home</Link>
-        <p className="eyebrow">A real checked-in proof</p>
+        <p className="eyebrow">Checked-in proof artifact</p>
         <h1>Inspect the evidence. Then try to break it.</h1>
-        <p className="lede">This is the actual Rosendaltown proof artifact committed to Habitat. The browser verifier reproduces Habitat&apos;s canonical SHA-256 content check without needing a backend.</p>
+        <p className="lede">This checked-in artifact demonstrates Habitat&apos;s canonical SHA-256 integrity check without needing a backend. Digest verification proves that the artifact has not changed; it does not independently verify the referenced external repository or real-world claim.</p>
       </section>
 
       <section className="proof-demo-banner">
         <div>
-          <span className={`status ${status === "VERIFIED" ? "ok" : "attention"}`}>{status}</span>
+          <span className={`status ${status === "INTEGRITY VERIFIED" ? "ok" : "attention"}`}>{status}</span>
           <strong>{verified === true ? "Digest matches the proof." : verified === false ? "Digest mismatch detected." : "Ready to verify."}</strong>
         </div>
         <div className="actions">
@@ -214,7 +214,7 @@ export default function ProofDemo() {
 
       <section className="notice">
         <strong>Interpretation boundary</strong>
-        <span>A valid proof establishes the integrity and consistency of the supplied evidence. It does not by itself establish publisher trust or real-world truth.</span>
+        <span>A matching digest establishes integrity of this supplied artifact only. The referenced external commit is not currently independently resolved by this hosted demo, so publisher trust and the real-world claim remain unverified.</span>
       </section>
 
       <section className="proof-demo-footer">
