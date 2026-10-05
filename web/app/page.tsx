@@ -41,11 +41,11 @@ export default function Home() {
         <Link className="hero-proof" href="/dashboard#proof-demo" aria-label="Open the interactive Habitat proof demo">
           <div className="proof-window">
             <div className="window-bar"><span /><span /><span /><b>habitat proof</b></div>
-            <div className="proof-status"><span className="status-dot" /> VERIFIED <small>portable proof</small></div>
+            <div className="proof-status"><span className="status-dot" /> INTEGRITY CHECK <small>portable artifact</small></div>
             <div className="proof-claim">Rosendaltown artifact <strong>45bc7aa7</strong> has an integrity-checkable evidence trail.</div>
-            <div className="proof-live"><span className="live-dot" /><strong>VERIFIED</strong><span>Habitat ledger · exact run correlation</span></div>
+            <div className="proof-live"><span className="live-dot" /><strong>UNVERIFIED</strong><span>external commit not independently resolved</span></div>
             <div className="proof-lines">
-              <div><span>Evidence</span><b>trusted ledger</b></div>
+              <div><span>Evidence</span><b>supplied Habitat ledger</b></div>
               <div><span>Action</span><b>run_job</b></div>
               <div><span>Integrity</span><b>intact</b></div>
               <div><span>Digest</span><b className="mono">faaa6dfb…2acc2</b></div>
