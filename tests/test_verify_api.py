@@ -26,7 +26,7 @@ def test_proof_status_is_machine_readable(tmp_path):
     s.close()
 
 
-def test_external_claim_is_not_downgraded_without_adapter(tmp_path):
+def test_external_claim_without_adapter_is_currently_inconclusive(tmp_path):
     s = _store(tmp_path)
     c = Claim.new('h1', 'external check passed', None, None, 'ok')
     c.status = 'verified'
@@ -35,7 +35,8 @@ def test_external_claim_is_not_downgraded_without_adapter(tmp_path):
     s.save_claim(c)
     result = verify_and_prove(s, c.id)
     stored = s.get_claim(c.id)
-    assert result['verdict'] == 'verified'
+    assert result['verdict'] == 'inconclusive'
+    assert result['stored_verdict'] == 'verified'
     assert result['reverified'] is False
     assert result['reverify_reason'] == 'external_evidence_requires_adapter'
     assert stored.status == 'verified'
