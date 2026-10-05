@@ -4,10 +4,10 @@ These artifacts record real work performed in other projects and verified by Hab
 
 ## Current proof set
 
-| Project | Real change | Habitat | External execution evidence |
+| Project | Supplied claim | Artifact integrity | External execution evidence |
 |---|---|---:|---|
 | Greenlight-k53 | K53 database cache refresh with offline fallback | VERIFIED | GitHub Actions: success |
-| Rosendaltown | Correct category/content image mapping and homepage imagery | VERIFIED | Vercel: success |
+| Rosendaltown | Correct category/content image mapping and homepage imagery | CHECKABLE | UNVERIFIED — referenced commit is not independently resolved by the hosted demo |
 | Diketo | Low-end performance soft limits | VERIFIED | Vercel: success |
 | SoloBid-v2 | Invoice-native DueToday coverage and UI lanes | VERIFIED | Not exposed for the historical SHA |
 
