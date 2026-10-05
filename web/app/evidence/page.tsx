@@ -35,7 +35,7 @@ export default function EvidencePage() {
         </div>
       </nav>
 
-      <main className="shell">
+      <main id="main-content" tabIndex={-1} className="shell">
         <header className="hero compact">
           <p className="eyebrow">Reconciled proof archive</p>
           <h1>Proofs we can actually stand behind.</h1>
