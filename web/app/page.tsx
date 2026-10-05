@@ -4,7 +4,7 @@ const GITHUB_URL = "https://github.com/buttercode101/Habitat";
 
 export default function Home() {
   return (
-    <main className="marketing-shell">
+    <main id="main-content" tabIndex={-1} className="marketing-shell">
       <header className="marketing-nav shell-width">
         <Link className="brand" href="/">Habitat</Link>
         <nav className="desktop-nav" aria-label="Primary navigation">
