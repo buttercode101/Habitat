@@ -39,8 +39,8 @@ function DemoDashboard({ error }: { error: string }) {
         <Link className="back" href="/">← Back to Habitat</Link>
         <p className="eyebrow">Interactive proof surface</p>
         <h1>See Habitat working without connecting a backend.</h1>
-        <p className="lede">The hosted dashboard is presentation-only until a Habitat service is configured. Instead of leaving you at an error screen, this deployment now ships with a real repository proof you can inspect and verify in-browser.</p>
-        <div className="notice"><strong>Live backend unavailable</strong><span>{error}. Showing the checked-in Rosendaltown proof as an explicit demo — no fake live data.</span></div>
+        <p className="lede">The hosted dashboard is presentation-only until a Habitat service is configured. Instead of leaving you at an error screen, this deployment ships with a checked-in proof artifact whose content integrity you can verify in-browser.</p>
+        <div className="notice"><strong>Live backend unavailable</strong><span>{error}. Showing a checked-in Rosendaltown proof artifact as an explicit demo. Its digest can be verified here; the referenced external commit is not treated as independently verified.</span></div>
       </section>
       <section className="metrics" aria-label="Demo proof status">
         <Metric label="Claims" value={1} />
@@ -48,7 +48,7 @@ function DemoDashboard({ error }: { error: string }) {
         <Metric label="Ledger" value={1} />
         <Metric label="Mode" value="DEMO" />
       </section>
-      <section className="section-head"><div><p className="eyebrow">Repository proof</p><h2>One real claim, ready to inspect</h2></div><span className="muted">Checked-in artifact</span></section>
+      <section className="section-head"><div><p className="eyebrow">Repository proof</p><h2>One proof artifact, ready to inspect</h2></div><span className="muted">Checked-in artifact</span></section>
       <div className="claims"><ClaimCard claim={DEMO_CLAIM} demo /></div>
       <ProofDemo />
       <footer><Link href="/">Habitat</Link> · Demo mode is explicit. A configured Habitat service becomes the source of truth.</footer>
