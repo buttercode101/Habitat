@@ -17,7 +17,7 @@ const DEMO_CLAIM: Claim = {
   agent_id: "github",
   run_id: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
   statement: "Shipped Rosendaltown change: corrected category image/content mapping and refreshed homepage imagery with the real Rosendal photos.",
-  expected_status: "ok",
+  expected_status: "unverified_external",
   status: "unverified",
 };
 
@@ -58,7 +58,7 @@ function DemoDashboard({ error }: { error: string }) {
 
 function Dashboard({ status, claims, attention, live }: { status: Awaited<ReturnType<typeof getStatus>>; claims: Claim[]; attention: number; live: boolean }) {
   return (
-    <main className="shell">
+    <main id="main-content" tabIndex={-1} className="shell">
       <header className="topbar"><Link className="brand" href="/">Habitat</Link><span className="pill">{live ? "LIVE ACCOUNTABILITY SURFACE" : "ACCOUNTABILITY SURFACE"}</span></header>
       <section className="hero compact"><Link className="back" href="/">← Habitat home</Link><p className="eyebrow">{status.name}</p><h1>Inspect what your agents actually did.</h1><p className="lede">A live inspection surface over Habitat's persistent ledger, policy checks, claims and portable proofs.</p><div className="flow"><span>Agent</span><i>→</i><span>Event</span><i>→</i><span>Ledger</span><i>→</i><span>Verify</span><i>→</i><span>Proof</span></div></section>
       <section className="metrics" aria-label="Habitat status"><Metric label="Jobs" value={status.jobs} /><Metric label="Agents" value={status.agents} /><Metric label="Active signals" value={status.active_signals} /><Metric label="Needs attention" value={attention} /></section>
