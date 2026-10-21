@@ -1,26 +1,14 @@
 import Link from "next/link";
+import manifest from "../../public/proofs-manifest.json";
 
 export const metadata = {
   title: "Evidence — Habitat",
   description: "A reconciled set of checked-in proof artifacts.",
 };
 
-const proofs = [
-  {
-    project: "Greenlight-K53",
-    runId: "greenlight_k53-9dc5a00-0",
-    commit: "9dc5a00",
-    digest: "faaa6dfb…45b2",
-    href: "/proofs/Greenlight-K53/greenlight_k53-9dc5a00-0/proof.json",
-  },
-  {
-    project: "Diketo",
-    runId: "diketo-30feea5-0",
-    commit: "30feea5",
-    digest: "10c0bd36…f6ed",
-    href: "/proofs/Diketo/diketo-30feea5-0/proof.json",
-  },
-];
+const proofs = Object.entries(manifest.projects).flatMap(([project, runs]) =>
+  runs.map((proof) => ({ ...proof, project }))
+);
 
 export default function EvidencePage() {
   return (
@@ -55,15 +43,15 @@ export default function EvidencePage() {
           <h2 id="projects-heading" className="section-title">Reconciled proof artifacts</h2>
           <div className="projects-grid">
             {proofs.map((proof) => (
-              <article key={proof.runId} className="project-card">
+              <article key={proof.run_id} className="project-card">
                 <h3 className="project-name">{proof.project}</h3>
-                <Link href={proof.href} className="proof-card" target="_blank" rel="noopener noreferrer">
+                <Link href={new URL(proof.proof_url).pathname} className="proof-card" target="_blank" rel="noopener noreferrer">
                   <div className="proof-top">
-                    <span className="proof-id">{proof.runId}</span>
-                    <span className="status ok"><span className="dot" aria-hidden="true" />VERIFIED</span>
+                    <span className="proof-id">{proof.run_id}</span>
+                    <span className="status ok"><span className="dot" aria-hidden="true" />RECONCILED</span>
                   </div>
-                  <p className="proof-commit">Commit <code>{proof.commit}</code></p>
-                  <div className="proof-digest"><span>Digest</span><b className="mono">{proof.digest}</b></div>
+                  <p className="proof-commit">{proof.claim}</p>
+                  <div className="proof-digest"><span>Digest</span><b className="mono">{proof.content_sha256.slice(0, 8)}…{proof.content_sha256.slice(-4)}</b></div>
                 </Link>
               </article>
             ))}
