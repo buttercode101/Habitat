@@ -1,4 +1,29 @@
 type Json = Record<string, unknown>;
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+
+async function boundedText(response: Response) {
+  if (Number(response.headers.get("content-length")) > MAX_RESPONSE_BYTES) {
+    await response.body?.cancel();
+    throw new Error("backend_response_too_large");
+  }
+  if (!response.body) throw new Error("invalid_backend_response");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0, text = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error("backend_response_too_large");
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    return text + decoder.decode();
+  } finally { reader.releaseLock(); }
+}
 
 function baseUrl() {
   const raw = process.env.HABITAT_API_URL?.trim();
@@ -35,12 +60,13 @@ export async function habitatFetch<T = Json>(path: string, init: RequestInit = {
     signal: init.signal ?? AbortSignal.timeout(10_000),
     cache: "no-store",
   });
-  const text = await response.text();
-  let payload: unknown;
-  try { payload = JSON.parse(text); } catch { throw new Error("invalid_backend_response"); }
   if (!response.ok) {
+    await response.body?.cancel();
     throw new Error(`Habitat API returned ${response.status}`);
   }
+  const text = await boundedText(response);
+  let payload: unknown;
+  try { payload = JSON.parse(text); } catch { throw new Error("invalid_backend_response"); }
   if (!payload || typeof payload !== "object") throw new Error("invalid_backend_response");
   return payload as T;
 }
@@ -83,5 +109,23 @@ export async function getClaims() {
   }
   return claims;
 }
-export async function getProof(id: string) { return habitatFetch<Json>(`/v1/claims/${encodeURIComponent(id)}/proof`); }
-export async function verifyClaim(id: string) { return habitatFetch<Json>(`/v1/claims/${encodeURIComponent(id)}/verify`); }
+function object(value: unknown): value is Json {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function proofResponse(payload: Json, id: string) {
+  const proof = payload.proof;
+  if (payload.claim_id !== id || !object(proof) || !object(proof.claim) || proof.claim.id !== id ||
+      typeof proof.claim.claim !== "string" || !object(proof.ledger) || !Array.isArray(proof.ledger.actions) ||
+      typeof proof.content_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(proof.content_sha256)) {
+    throw new Error("invalid_backend_proof");
+  }
+  return payload;
+}
+
+export async function getProof(id: string) {
+  return proofResponse(await habitatFetch<Json>(`/v1/claims/${encodeURIComponent(id)}/proof`), id);
+}
+export async function verifyClaim(id: string) {
+  return proofResponse(await habitatFetch<Json>(`/v1/claims/${encodeURIComponent(id)}/verify`), id);
+}

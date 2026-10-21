@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { getStatus, getClaims, habitatFetch } from "./habitat.ts";
+import { getStatus, getClaims, getProof, verifyClaim, habitatFetch } from "./habitat.ts";
+import demoProof from "./demo-proof.json" with { type: "json" };
 
 test("real HTTP upstream failures cannot become live dashboard data", async () => {
   const original = { url: process.env.HABITAT_API_URL, token: process.env.HABITAT_API_TOKEN };
@@ -13,6 +14,9 @@ test("real HTTP upstream failures cannot become live dashboard data", async () =
     if (req.url === "/empty") return res.end();
     if (req.url === "/redirect") { res.writeHead(302, { Location: "/target" }); return res.end(); }
     if (req.url === "/error") { res.writeHead(503); return res.end(JSON.stringify({ error: "sensitive upstream detail" })); }
+    if (req.url === "/large-length") { res.writeHead(200, { "Content-Length": String(3 * 1024 * 1024) }); return res.end("too large"); }
+    if (req.url === "/large-stream") { res.write('"'); return res.end("x".repeat(2 * 1024 * 1024)); }
+    if (req.url?.startsWith("/v1/claims/") && /\/(proof|verify)$/.test(req.url)) return res.end(JSON.stringify({ claim_id: demoProof.claim.id, proof: demoProof }));
     if (req.url === "/v1/status") return res.end(JSON.stringify({ id: "h", name: "test", status: "active", jobs: 0, agents: 1, active_signals: 0 }));
     if (req.url === "/v1/claims") return res.end(JSON.stringify([{ id: "c", claim: "Python claim field", job_id: null, run_id: null, status: "pending" }]));
     res.end(JSON.stringify({ error: "wrong schema" }));
@@ -28,6 +32,11 @@ test("real HTTP upstream failures cannot become live dashboard data", async () =
     await assert.rejects(habitatFetch("/redirect"));
     assert.ok(!seen.includes("/target"), "must not follow credentialed redirects");
     await assert.rejects(habitatFetch("/error"), { message: "Habitat API returned 503" });
+    for (const path of ["/large-length", "/large-stream"]) await assert.rejects(habitatFetch(path), /backend_response_too_large/);
+    assert.equal((await getProof(demoProof.claim.id)).claim_id, demoProof.claim.id);
+    assert.equal((await verifyClaim(demoProof.claim.id)).claim_id, demoProof.claim.id);
+    await assert.rejects(getProof("wrong-claim"), /invalid_backend_proof/);
+    await assert.rejects(verifyClaim("wrong-claim"), /invalid_backend_proof/);
     process.env.HABITAT_API_URL += "/wrong-prefix";
     await assert.rejects(getStatus(), /invalid_backend_status/);
     await assert.rejects(getClaims(), /invalid_backend_claims/);
