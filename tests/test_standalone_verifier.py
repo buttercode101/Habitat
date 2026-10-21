@@ -39,11 +39,12 @@ def test_standalone_preserves_signature_boundary(tmp_path):
     assert standalone["content_sha256"] == canonical["content_sha256"]
     assert standalone["assurance"]["publisher_trust"] == canonical["assurance"]["publisher_trust"]
     assert standalone["assurance"]["external_truth"] == canonical["assurance"]["external_truth"]
-    assert standalone["assurance"]["signature"] == "present-unverified"
-    if canonical["assurance"]["signature"] == "present-unverified":
-        assert code == 0; assert standalone == canonical
-    else:
-        assert canonical["assurance"]["signature"] == "invalid"; assert code == 0; assert standalone["valid"] is True
+    # Both verifiers perform the same cryptographic check when the optional
+    # dependency is present; an invalid signature must fail closed.
+    assert standalone == canonical
+    assert code == (0 if canonical["valid"] else 1)
+    assert standalone["assurance"]["signature"] in {"invalid", "present-unverified"}
+
 
 
 def test_standalone_matches_canonical_on_tampered_bundle(tmp_path):
