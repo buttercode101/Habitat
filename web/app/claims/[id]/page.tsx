@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getProof } from "../../../lib/habitat";
 
+export const dynamic = "force-dynamic";
+
 type JsonObject = Record<string, unknown>;
 
 function object(value: unknown): JsonObject {
@@ -30,13 +32,13 @@ export default async function ClaimPage({ params }: { params: Promise<{ id: stri
     const ledger = object(proof.ledger);
 
     return (
-      <main className="shell">
+      <main id="main-content" tabIndex={-1} className="shell">
         <header className="topbar">
           <Link className="brand" href="/">Habitat</Link>
           <span className="pill">PROOF INSPECTOR</span>
         </header>
         <section className="inspector-head">
-          <Link className="back" href="/">← All claims</Link>
+          <Link className="back" href="/dashboard">← All claims</Link>
           <p className="eyebrow">Claim</p>
           <h1>{field(claim.claim)}</h1>
           <span className="mono">{id}</span>
@@ -81,13 +83,13 @@ export default async function ClaimPage({ params }: { params: Promise<{ id: stri
     );
   } catch (error) {
     return (
-      <main className="shell">
+      <main id="main-content" tabIndex={-1} className="shell">
         <header className="topbar"><Link className="brand" href="/">Habitat</Link><span className="pill">PROOF INSPECTOR</span></header>
         <section className="hero compact">
           <p className="eyebrow">Claim unavailable</p>
           <h1>Habitat could not load this proof.</h1>
           <p className="lede">{error instanceof Error ? error.message : "Unknown backend error"}</p>
-          <Link className="button primary" href="/">Back to dashboard</Link>
+          <Link className="button primary" href="/dashboard">Back to dashboard</Link>
         </section>
       </main>
     );

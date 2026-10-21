@@ -57,6 +57,7 @@ export type Claim = {
   agent_id?: string;
   run_id?: string;
   job_id?: string;
+  claim?: string;
   statement?: string;
   expected_status?: string;
   status?: string;

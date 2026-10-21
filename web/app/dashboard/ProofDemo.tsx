@@ -1,59 +1,10 @@
 "use client";
 
+import demoProof from "../../lib/demo-proof.json";
+
 import { useState } from "react";
 
-const ORIGINAL = {
-  proof_version: "1",
-  generated_at: "2026-09-15T13:39:37.600511+00:00",
-  content_sha256: "a21b7f2ff7c25c6b87d6d502bb0916d7423f4f46f3bb1f8349ddcf00818fc088",
-  claim: {
-    id: "7b0dfe4e-fa51-44a7-8549-428083b666d9",
-    habitat_id: "real-projects",
-    job_id: null,
-    claim: "Shipped Rosendaltown change: corrected category image/content mapping and refreshed homepage imagery with the real Rosendal photos.",
-    action: "commit",
-    expected_status: "unverified_external",
-    created_at: "2026-09-15T13:39:37.597558+00:00",
-    verified_at: "2026-09-15T13:39:37.599886+00:00",
-    status: "verified",
-    evidence: {
-      action: "commit",
-      action_id: "rosendaltown-commit-45bc7aa7f945",
-      details: {
-        commit: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
-        repo: "buttercode101/rosendaltown",
-        source: "existing_real_project_commit",
-        summary: "Fix category image/content mismatch by mapping real Rosendal photos to each listing and updating homepage/category imagery.",
-        url: "https://github.com/buttercode101/rosendaltown/commit/45bc7aa7f9458ced34c97cd76a7e833c71632aaa"
-      },
-      run_id: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
-      source: "habitat_supplied_ledger",
-      status: "ok",
-      timestamp: "2026-09-15T13:39:37.000666+00:00"
-    },
-    run_id: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa"
-  },
-  ledger: {
-    integrity: "intact",
-    actions: [{
-      action: "commit",
-      actor: "github",
-      details: {
-        commit: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
-        repo: "buttercode101/rosendaltown",
-        source: "existing_real_project_commit",
-        summary: "Fix category image/content mismatch by mapping real Rosendal photos to each listing and updating homepage/category imagery.",
-        url: "https://github.com/buttercode101/rosendaltown/commit/45bc7aa7f9458ced34c97cd76a7e833c71632aaa"
-      },
-      habitat_id: "real-projects",
-      id: "rosendaltown-commit-45bc7aa7f945",
-      job_id: null,
-      run_id: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
-      status: "ok",
-      timestamp: "2026-09-15T13:39:37.000666+00:00"
-    }]
-  }
-};
+const ORIGINAL = demoProof;
 
 function canonical(value: any): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -74,7 +25,7 @@ export default function ProofDemo() {
   const [proof, setProof] = useState(ORIGINAL);
   const [verified, setVerified] = useState<boolean | null>(null);
   const tampered = proof.claim.evidence.details.summary !== ORIGINAL.claim.evidence.details.summary;
-  const stateLabel = tampered ? "TAMPERED" : verified === true ? "VERIFIED" : "READY";
+  const stateLabel = tampered ? "TAMPERED" : verified === true ? "INTEGRITY VERIFIED" : verified === false ? "DIGEST MISMATCH" : "READY";
 
   async function verify() {
     setVerified((await digest(proof)) === proof.content_sha256);
