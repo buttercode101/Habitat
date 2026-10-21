@@ -14,7 +14,7 @@ test("real HTTP upstream failures cannot become live dashboard data", async () =
     if (req.url === "/redirect") { res.writeHead(302, { Location: "/target" }); return res.end(); }
     if (req.url === "/error") { res.writeHead(503); return res.end(JSON.stringify({ error: "sensitive upstream detail" })); }
     if (req.url === "/v1/status") return res.end(JSON.stringify({ id: "h", name: "test", status: "active", jobs: 0, agents: 1, active_signals: 0 }));
-    if (req.url === "/v1/claims") return res.end(JSON.stringify([{ id: "c", claim: "Python claim field", status: "unverified" }]));
+    if (req.url === "/v1/claims") return res.end(JSON.stringify([{ id: "c", claim: "Python claim field", job_id: null, run_id: null, status: "pending" }]));
     res.end(JSON.stringify({ error: "wrong schema" }));
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));

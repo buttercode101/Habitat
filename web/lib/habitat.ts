@@ -78,7 +78,7 @@ export async function getStatus() {
 export async function getClaims() {
   const claims = await habitatFetch<Claim[]>("/v1/claims");
   if (!Array.isArray(claims) || claims.some(claim => !claim || typeof claim.id !== "string" ||
-      ["claim", "statement", "status", "agent_id", "run_id", "expected_status"].some(key => claim[key] !== undefined && typeof claim[key] !== "string"))) {
+      ["claim", "statement", "status", "agent_id", "run_id", "expected_status"].some(key => claim[key] != null && typeof claim[key] !== "string"))) {
     throw new Error("invalid_backend_claims");
   }
   return claims;
