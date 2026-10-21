@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getClaims, getStatus, type Claim } from "../../lib/habitat";
 import ProofDemo from "./ProofDemo";
+import demoProof from "../../lib/demo-proof.json";
 
 export const dynamic = "force-dynamic";
 
@@ -11,16 +12,20 @@ export const metadata: Metadata = {
 };
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to reach the Habitat backend";
+  const cause = error instanceof Error ? error.cause : undefined;
+  const rawCode = cause && typeof cause === "object" && "code" in cause ? String(cause.code) : "UPSTREAM_ERROR";
+  // Log only a bounded error code; never the upstream URL, token or payload.
+  console.warn("Habitat upstream unavailable", { code: /^[A-Z0-9_]{1,64}$/.test(rawCode) ? rawCode : "UPSTREAM_ERROR" });
+  return "Unable to reach the Habitat backend";
 }
 
 const DEMO_CLAIM: Claim = {
-  id: "7b0dfe4e-fa51-44a7-8549-428083b666d9",
-  agent_id: "github",
-  run_id: "45bc7aa7f9458ced34c97cd76a7e833c71632aaa",
-  statement: "Shipped Rosendaltown change: corrected category image/content mapping and refreshed homepage imagery with the real Rosendal photos.",
-  expected_status: "unverified_external",
-  status: "unverified",
+  id: demoProof.claim.id,
+  agent_id: demoProof.ledger.actions[0].actor,
+  run_id: demoProof.claim.run_id,
+  claim: demoProof.claim.claim,
+  expected_status: demoProof.claim.expected_status,
+  status: demoProof.claim.status,
 };
 
 export default async function DashboardPage() {
