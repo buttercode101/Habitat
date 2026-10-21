@@ -35,5 +35,7 @@ jobs:
         run: npm ci
       - name: Audit frontend dependencies
         run: npm audit --audit-level=high
+      - name: Test upstream failure boundaries
+        run: npm test
       - name: Build Vercel surface
         run: npm run build
