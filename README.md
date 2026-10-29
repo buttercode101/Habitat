@@ -1,3 +1,5 @@
+![CI](https://github.com/buttercode101/Habitat/actions/workflows/test.yml/badge.svg)
+
 # Habitat
 
 **A local-first supervision and evidence runtime for autonomous agents.**
