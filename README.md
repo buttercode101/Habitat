@@ -1,4 +1,5 @@
 ![CI](https://github.com/buttercode101/Habitat/actions/workflows/test.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 # Habitat
 
