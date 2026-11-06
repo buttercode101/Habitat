@@ -15,8 +15,8 @@ Date: 2026-11-06 · Starting commit `323ca4c` · Tested with fix set below.
 - Fix: PUT protection — strict, required contexts [`test (3.10)`, `test (3.11)`, `test (3.12)`, `test (3.13)`, `web-build`, `dependency-audit`] (names verified via check-runs for `323ca4c`), `enforce_admins=false`, force-push/deletion blocked.
 - Verification: re-GET confirms all 6 contexts, strict=true (2026-11-06).
 
-## H-004 — Dependabot watches pip only; `web/` npm deps unwatched (P3, ACCEPTED)
-- `.github/workflows` runs `npm audit` in CI (web.yml), but no Dependabot PRs for npm. Extending dependabot to npm is a one-line `dependabot.yml` addition — deferred to owner choice (PR volume vs coverage). CI audit is the current gate.
+## H-004 — Dependabot watches pip only; `web/` npm deps unwatched (P3, FIXED 2026-11-06)
+- `.github/workflows` runs `npm audit` in CI (web.yml). Added `package-ecosystem: npm` entry for `/web` to `.github/dependabot.yml` (monthly, limit 3). Verified via `cat .github/dependabot.yml`. PR volume now covered for both ecosystems.
 
 ## H-005 — Live page stale cache (~29h `age`) (P3, OPEN)
 - `x-vercel-cache: HIT`, age ~104,645s observed 2026-11-06. Investigate Vercel cache headers / redeploy if stale demo content persists. Not a code defect in this pass.
