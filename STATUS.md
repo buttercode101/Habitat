@@ -2,7 +2,7 @@
 
 > Canonical restart point. Read this before making a material change.
 
-**Last reconciled:** 2026-09-25  
+**Last reconciled:** 2026-11-08 (final phase, commit `2194d58`, branch `flagship-excellence`)  
 **Repository:** `buttercode101/Habitat`  
 **Default branch:** `main`  
 **Package version:** `1.3.0`  
@@ -47,6 +47,14 @@ The verifier distinguishes structural validity, content integrity, internal cons
 ## Current gate
 
 The corrected Evidence route and manifest have been independently browser-verified, and the current CI matrix is green on Python 3.10–3.13 plus dependency audit. The reproducible project-state workflow is now documented in `PROJECT_STATE.md` and `HANDOFF.md`.
+
+## Final phase (2026-11-08) — QA + verdict
+
+- **QA re-run on `2194d58`:** `python3.13 -m pytest -q` → **116 passed**; `examples/prove_run.py` → **Standalone verification: VALID**; fresh-DB smoke (`init → demo → prove --run-id run-42 → tools/verify_proof.py`) → **VALID, exit 0 throughout**. The UX_AUDIT headline first-run defect (README prove on a fresh DB) is fixed via `habitat demo` and re-verified.
+- **Verdict (see `RELEASE_VERDICT.md`): NOT READY as a production evidence service (73/100); READY as a library + CLI + demo site.** All phases (PRODUCT_IDENTITY, COMPETITIVE_BENCHMARK, UX_AUDIT, DESIGN_SYSTEM) and the five-perspective `INDEPENDENT_REVIEW.md` converge on this.
+- **Monetization (see `MONETIZATION.md`): hypothesis only.** No pricing, revenue, or traction claimed; dev-tool adoption first, transactional trust-events as the ranked hypothesis, seat SaaS deprioritized (D-013).
+- **Demo labelling audited:** `sample: true` travels inside `proof.json`; dashboard demo fallback and `UNVERIFIED` Rosendäl card remain disclosed. No service claims added in this phase.
+- Phase docs added: `MONETIZATION.md`, `INDEPENDENT_REVIEW.md`, `RELEASE_VERDICT.md` (+ untracked Phase 1–4 set committed alongside).
 
 ## Remaining validation
 

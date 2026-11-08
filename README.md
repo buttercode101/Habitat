@@ -7,7 +7,22 @@
 
 Habitat records trusted agent actions, correlates work with run IDs, verifies claims against an evidence ledger or explicit external evidence, and produces portable proof that another machine can independently check.
 
-[Live application](https://habitat-za.vercel.app) · [Quick start](#quick-start) · [Protocol](PROTOCOL.md) · [Security](SECURITY.md) · [MIT license](LICENSE)
+[Live application](https://habitat-za.vercel.app) · [Quick start](#quick-start) · [Protocol](PROTOCOL.md) · [Security](SECURITY.md) · [Release verdict](RELEASE_VERDICT.md) · [MIT license](LICENSE)
+
+## Current status — read this first
+
+| | |
+|---|---|
+| **As a library + CLI + standalone verifier** | **Ready.** 116/116 tests green, `prove_run.py` → `VALID`, fresh-DB `demo → prove → verify` smoke green (2026-11-08). |
+| **As a production evidence service** | **Not ready (73/100).** No production deployment, no key-management runbook, no authenticated access layer. The web dashboard is a **disclosed demo** — it falls back to checked-in demo proof because the live backend is unavailable. |
+| **Traction / pricing** | **None claimed.** No users, revenue, or prices exist yet; see [MONETIZATION.md](MONETIZATION.md) — hypothesis only. |
+
+The full, evidence-backed verdict (and what would change it) is in [RELEASE_VERDICT.md](RELEASE_VERDICT.md).
+Five independent perspectives — developer, security, operator, buyer, maintainer — converge in [INDEPENDENT_REVIEW.md](INDEPENDENT_REVIEW.md).
+
+> **Demo data is labelled as demo** — in CLI output, inside `proof.json` (`"sample": true`), on the proof card's
+> assurance boundary, and on the dashboard. A `VERIFIED` demo proof means *"the claim matches evidence in the
+> local ledger"* — never *"the claim is true in the world."*
 
 ## Why Habitat exists
 
@@ -128,6 +143,10 @@ Read [VERIFY_PROOF.md](VERIFY_PROOF.md) and [PROOF.md](PROOF.md) for the verific
 - [PROOF.md](PROOF.md) — proof model
 - [VERIFY_PROOF.md](VERIFY_PROOF.md) — independent verification
 - [ADOPTION.md](ADOPTION.md) — integration path
+- [MONETIZATION.md](MONETIZATION.md) — monetization hypotheses (no traction claimed)
+- [RELEASE_VERDICT.md](RELEASE_VERDICT.md) — release verdict: library ready, service not ready (73/100)
+- [INDEPENDENT_REVIEW.md](INDEPENDENT_REVIEW.md) — five-perspective independent review
+- [PRODUCT_IDENTITY.md](PRODUCT_IDENTITY.md) · [COMPETITIVE_BENCHMARK.md](COMPETITIVE_BENCHMARK.md) · [UX_AUDIT.md](UX_AUDIT.md) · [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) — Phase 1–4 audit set
 - [CHANGELOG.md](CHANGELOG.md) — release history
 
 ## Contributing

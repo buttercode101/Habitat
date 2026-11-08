@@ -1,8 +1,29 @@
 # Habitat on Vercel
 
+> **Status (2026-11-08):** The Vercel tier is a **presentation + demo surface only**. The live backend is
+> unavailable; the dashboard falls back to checked-in demo proof and discloses it. Nothing in this document
+> changes that until a persistent backend is actually deployed (see `RELEASE_VERDICT.md` — production service
+> NOT READY, 73/100). Do not present this deployment as a production evidence service.
+
 Habitat uses a two-layer deployment model. The persistent Python Habitat service remains the source of truth for SQLite, the ledger, policy evaluation, events, agents, claims and proof generation. Vercel hosts the public landing page plus the inspection UI and a small server-side proxy that keeps the Habitat bearer token off the browser.
 
 **Live site:** https://habitat-za.vercel.app
+
+## Cost honesty
+
+| Layer | Cost | Note |
+|---|---|---|
+| Vercel web tier (landing + demo inspector) | Free/hobby tier is sufficient today | Presentation only — **Vercel does not host the ledger**. Budgeting Vercel as "the backend" is a category error. A production domain/analytics may require a paid plan. |
+| Persistent Habitat backend (when deployed) | Small VPS / persistent host, order of **single-digit USD/month** | Not deployed today. SQLite must not sit on an ephemeral filesystem. The library/CLI itself is **$0 runtime** (stdlib + SQLite). See `MONETIZATION.md` §5. |
+
+## Pre-deploy checklist (owner)
+
+- [ ] Persistent host chosen; `habitat serve` reachable over HTTPS (TLS in front).
+- [ ] Strong random `HABITAT_WEBHOOK_SECRET`; backend network-restricted to the Vercel proxy.
+- [ ] `habitat backup` exercised and restore tested on that host.
+- [ ] Key-management runbook written (outstanding per `RELEASE_ACCEPTANCE_REPORT.md`).
+- [ ] Authenticated access layer in front of the dashboard if claim/evidence data is sensitive.
+- [ ] Only after the above: update `STATUS.md`, `RELEASE_VERDICT.md`, and the dashboard demo disclosure.
 
 The existing SQLite-backed HTTP service is intentionally not moved into a Vercel serverless function. Vercel is the presentation/API edge; the durable Habitat process belongs on a persistent service.
 
