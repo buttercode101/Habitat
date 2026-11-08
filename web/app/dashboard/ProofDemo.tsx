@@ -25,7 +25,8 @@ export default function ProofDemo() {
   const [proof, setProof] = useState(ORIGINAL);
   const [verified, setVerified] = useState<boolean | null>(null);
   const tampered = proof.claim.evidence.details.summary !== ORIGINAL.claim.evidence.details.summary;
-  const stateLabel = tampered ? "TAMPERED" : verified === true ? "INTEGRITY VERIFIED" : verified === false ? "DIGEST MISMATCH" : "READY";
+  const stateLabel = tampered ? "TAMPERED" : verified === true ? "DIGEST MATCHES" : verified === false ? "DIGEST MISMATCH" : "READY";
+  const signatureState = (proof as any).signature ? "present-unverified" : "absent";
 
   async function verify() {
     setVerified((await digest(proof)) === proof.content_sha256);
@@ -52,7 +53,7 @@ export default function ProofDemo() {
     <section id="proof-demo" className="proof-demo-section">
       <div className="section-head"><div><p className="eyebrow">Proof inspector</p><h2>Break the proof on purpose.</h2></div><span className="muted">Browser verification · no backend required</span></div>
       <div className="proof-demo-banner">
-        <div><span className={`status ${tampered ? "attention" : verified === true ? "ok" : ""}`}>{stateLabel}</span><strong>{verified === true ? "Digest matches." : verified === false ? "Digest mismatch detected." : "Ready to verify."}</strong></div>
+        <div><span className={`status ${tampered ? "attention" : verified === true ? "ok" : ""}`}>{stateLabel}</span><strong>{verified === true ? "Digest matches — this checks content integrity only. Full verification (structure, consistency, signature, trust): python tools/verify_proof.py proof.json" : verified === false ? "Digest mismatch detected." : "Ready to verify. This browser check covers content integrity only, not the six-level verification."}</strong></div>
         <div className="actions">
           <button className="button primary" onClick={verify}>Verify proof</button>
           <button className="button" onClick={tamper}>Simulate tampering</button>
@@ -64,7 +65,8 @@ export default function ProofDemo() {
         <article className="proof-card"><h2>Claim</h2><div className="claim-statement">{proof.claim.claim}</div><Row label="Action" value={proof.claim.action}/><Row label="Run ID" value={proof.claim.run_id}/><Row label="Expected" value={proof.claim.expected_status}/></article>
         <article className="proof-card"><h2>Evidence</h2><Row label="Source" value={proof.claim.evidence.source}/><Row label="Action ID" value={proof.claim.evidence.action_id}/><Row label="Repository" value={proof.claim.evidence.details.repo}/><Row label="Commit" value={proof.claim.evidence.details.commit}/><Row label="Ledger" value={proof.ledger.integrity}/></article>
       </div>
-      <article className="proof-card action-detail"><div className="proof-card-head"><div><p className="eyebrow">Integrity</p><h2>Content digest</h2></div><span className="mono">{proof.content_sha256}</span></div><p className="proof-explain">Habitat hashes the canonical proof contents, excluding the generated timestamp and the digest itself. Change one field and the digest no longer matches.</p><div className="digest-state"><span className={verified === false ? "bad" : verified === true ? "good" : "neutral"}>{verified === false ? "✕ DIGEST MISMATCH" : verified === true ? "✓ DIGEST VERIFIED" : "○ READY TO VERIFY"}</span><code>{proof.content_sha256}</code></div></article>
+      <article className="proof-card action-detail"><div className="proof-card-head"><div><p className="eyebrow">Integrity</p><h2>Content digest</h2></div><span className="mono">{proof.content_sha256}</span></div><p className="proof-explain">Habitat hashes the canonical proof contents, excluding the generated timestamp and the digest itself. Change one field and the digest no longer matches.</p><div className="digest-state"><span className={verified === false ? "bad" : verified === true ? "good" : "neutral"}>{verified === false ? "✕ DIGEST MISMATCH" : verified === true ? "✓ DIGEST MATCHES" : "○ READY TO VERIFY"}</span><code>{proof.content_sha256}</code></div></article>
+      <article className="proof-card"><h2>Assurance (six-level)</h2><Row label="Structural validity" value={verified === true ? "valid (digest only in browser)" : "not checked in browser"}/><Row label="Content integrity" value={verified === true ? "valid — digest matches" : verified === false ? "invalid — digest mismatch" : "not checked yet"}/><Row label="Internal consistency" value="not checked in browser"/><Row label="Signature" value={signatureState}/>{signatureState === "present-unverified" && <p className="proof-explain">A signature is present but has not been checked. Run the verifier with your TrustRegistry to assess publisher trust.</p>}<Row label="Publisher trust" value="not-assessed"/><Row label="External truth" value="not-established"/></article>
     </section>
   );
 }

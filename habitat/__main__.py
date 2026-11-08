@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse, json, os, sys, secrets
 from pathlib import Path
-from .schema import Habitat, Job, utcnow
+from .schema import Habitat, Job, Action, utcnow
 from .store import Store
 from .config import load_config, validate_config
 from .runtime import run_once, run_loop
@@ -16,6 +16,7 @@ from .doctor import diagnose
 from .backup import backup, restore
 from .proof_sign import sign_proof
 from .proof_card import render_proof_card
+from .verdicts import explain_reason, boundary_sentence
 
 DEFAULT_DB = Path(".habitat/habitat.db")
 
@@ -43,6 +44,88 @@ def cmd_init(a):
     s.close()
     print(f"Initialized Habitat {cfg['id']} at {a.db}")
     return 0
+
+
+DEMO_RUN_ID = "run-42"
+DEMO_ACTION = "run_job"
+DEMO_CLAIM = "deployed v1.2.3 to production"
+DEMO_PROVE_COMMAND = (
+    f'habitat prove --run-id {DEMO_RUN_ID} --claim "{DEMO_CLAIM}" '
+    "-o proof.json --card"
+)
+
+
+def cmd_demo(a):
+    """Record one clearly-labelled sample action so the README prove flow works."""
+    s = get_store(a)
+    try:
+        h = s.habitat()
+        existing = s.matching_actions(h.id, action=DEMO_ACTION, run_id=DEMO_RUN_ID)
+        if existing:
+            print(
+                json.dumps(
+                    {
+                        "run_id": DEMO_RUN_ID,
+                        "action": DEMO_ACTION,
+                        "status": existing[0].status,
+                        "sample": True,
+                        "seeded": False,
+                        "next": DEMO_PROVE_COMMAND,
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+        jobs = s.jobs()
+        job_id = jobs[0].id if jobs else None
+        s.save_action(
+            Action(
+                id="demo-run-42-action",
+                habitat_id=h.id,
+                timestamp=utcnow(),
+                actor="agent",
+                action=DEMO_ACTION,
+                status="ok",
+                job_id=job_id,
+                details={"sample": True, "target": "production", "version": "1.2.3"},
+                run_id=DEMO_RUN_ID,
+            )
+        )
+        print(
+            json.dumps(
+                {
+                    "run_id": DEMO_RUN_ID,
+                    "action": DEMO_ACTION,
+                    "job_id": job_id,
+                    "status": "ok",
+                    "sample": True,
+                    "seeded": True,
+                    "boundary": boundary_sentence("demo"),
+                    "next": DEMO_PROVE_COMMAND,
+                },
+                indent=2,
+            )
+        )
+        print()
+        print("Sample demo data recorded (not a live verification).")
+        print(f"Next: {DEMO_PROVE_COMMAND}")
+        return 0
+    except RuntimeError as exc:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "status": "rejected",
+                    "error": "not_initialized",
+                    "hint": "habitat init --config examples/simple.yaml",
+                    "detail": str(exc),
+                    **(explain_reason("not_initialized") or {}),
+                }
+            )
+        )
+        return 1
+    finally:
+        s.close()
 
 
 def cmd_status(a):
@@ -123,7 +206,14 @@ def cmd_verify(a):
         return 1
     expected = json.loads(a.evidence_expected) if a.evidence_expected else None
     c = verify_claim(s, c, _evidence(a), a.query or a.github_issue, expected)
-    print(json.dumps({"id": c.id, "status": c.status, "evidence": c.evidence}, default=str))
+    result = {"id": c.id, "status": c.status, "evidence": c.evidence}
+    explanation = explain_reason(c.evidence.get("reason") if isinstance(c.evidence, dict) else None)
+    if explanation:
+        result["explanation"] = explanation
+    boundary = boundary_sentence(c.status)
+    if boundary:
+        result["boundary"] = boundary
+    print(json.dumps(result, default=str))
     s.close()
     return 0
 
@@ -182,18 +272,27 @@ def cmd_prove(a):
 
         c = verify_claim(s, c)
         if c.status != "verified":
-            print(
-                json.dumps(
-                    {
-                        "claim_id": c.id,
-                        "status": c.status,
-                        "evidence": c.evidence,
-                        "error": "claim_not_verified",
-                    },
-                    default=str,
-                    indent=2,
-                )
-            )
+            result = {
+                "claim_id": c.id,
+                "status": c.status,
+                "evidence": c.evidence,
+                "error": "claim_not_verified",
+            }
+            reason = c.evidence.get("reason") if isinstance(c.evidence, dict) else None
+            explanation = explain_reason(reason)
+            if explanation:
+                result["reason"] = reason
+                result["explanation"] = explanation
+                result["hint"] = explanation["next_action"]
+            boundary = boundary_sentence(c.status)
+            if boundary:
+                result["boundary"] = boundary
+            print(json.dumps(result, default=str, indent=2))
+            if explanation:
+                print()
+                print(f"Verdict: {c.status} — {explanation['meaning']}")
+                print(f"What would change this verdict: {explanation['what_would_change']}")
+                print(f"Next action: {explanation['next_action']}")
             return 1
 
         result = verify_and_prove(s, c.id) if a.reverify else proof_status(s, c.id)
@@ -209,6 +308,12 @@ def cmd_prove(a):
         else:
             result["signed"] = False
 
+        # --card must never reference a proof file that was not written:
+        # without an explicit -o, default to proof.json so the card's
+        # verify command names a file that actually exists (UX-06).
+        if a.card and not a.output:
+            a.output = "proof.json"
+
         if a.output:
             Path(a.output).write_text(
                 json.dumps(proof, default=str, indent=2, sort_keys=True) + "\n",
@@ -217,7 +322,9 @@ def cmd_prove(a):
             print(f"Wrote proof → {a.output}")
 
         if a.card:
-            card = render_proof_card(proof, {"valid": True, "verdict": c.status})
+            card = render_proof_card(
+                proof, {"valid": True, "verdict": c.status}, proof_filename=a.output or "proof.json"
+            )
             card_path = Path(a.output).with_suffix(".md") if a.output else Path("proof.md")
             card_path.write_text(card, encoding="utf-8")
             print(f"Wrote proof card → {card_path}")
@@ -232,6 +339,7 @@ def cmd_prove(a):
                     "run_id": c.run_id,
                     "proof_file": a.output,
                     "signed": result.get("signed", False),
+                    "boundary": boundary_sentence(c.status),
                 },
                 indent=2,
                 default=str,
@@ -325,6 +433,13 @@ def main(argv=None):
     x.add_argument("--config", required=True)
     x.set_defaults(func=cmd_init)
 
+    x = sub.add_parser(
+        "demo",
+        aliases=["seed"],
+        help="Record one sample action (run-42) so the README prove flow works on a fresh DB",
+    )
+    x.set_defaults(func=cmd_demo)
+
     sub.add_parser("status").set_defaults(func=cmd_status)
 
     x = sub.add_parser("run")
@@ -373,7 +488,7 @@ def main(argv=None):
     x.add_argument("--action", help="Expected action name (default: run_job)")
     x.add_argument("--expected-status", default="ok")
     x.add_argument("-o", "--output", help="Write portable proof.json to this path")
-    x.add_argument("--card", action="store_true", help="Also write a short markdown proof card")
+    x.add_argument("--card", action="store_true", help="Also write a short markdown proof card (defaults -o to proof.json if unset)")
     x.add_argument("--reverify", action="store_true")
     x.add_argument("--signing-key-env")
     x.add_argument("--key-id")

@@ -11,7 +11,7 @@ export default function Home() {
           <a href="#how-it-works">How it works</a>
           <a href="#why">Why Habitat</a>
           <Link href="/evidence">Evidence</Link>
-          <Link href="/dashboard">Live dashboard</Link>
+          <Link href="/dashboard">Dashboard (demo)</Link>
           <Link className="nav-cta" href="/dashboard#proof-demo">Inspect a proof</Link>
         </nav>
         <details className="mobile-nav">
@@ -20,7 +20,7 @@ export default function Home() {
             <a href="#how-it-works">How it works</a>
             <a href="#why">Why Habitat</a>
             <Link href="/evidence">Evidence</Link>
-            <Link href="/dashboard">Live dashboard</Link>
+            <Link href="/dashboard">Dashboard (demo)</Link>
             <Link href="/dashboard#proof-demo">Inspect a proof</Link>
             <a href={GITHUB_URL}>GitHub ↗</a>
           </div>

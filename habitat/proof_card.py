@@ -4,8 +4,12 @@ from __future__ import annotations
 from typing import Any
 
 
-def render_proof_card(proof: dict[str, Any], result: dict[str, Any] | None = None) -> str:
-    """Return a short markdown card that can be pasted into a PR or message."""
+def render_proof_card(proof: dict[str, Any], result: dict[str, Any] | None = None, proof_filename: str = "proof.json") -> str:
+    """Return a short markdown card that can be pasted into a PR or message.
+
+    `proof_filename` must be the file actually written for this proof, so
+    the embedded verify command never references an unwritten file (UX-06).
+    """
     claim = proof.get("claim") or {}
     ledger = proof.get("ledger") or {}
     evidence = claim.get("evidence") if isinstance(claim.get("evidence"), dict) else {}
@@ -32,7 +36,7 @@ def render_proof_card(proof: dict[str, Any], result: dict[str, Any] | None = Non
         f"**Evidence:** {source} · action `{action_id}` · ledger `{integrity}`",
         "",
         "```bash",
-        "python tools/verify_proof.py proof.json",
+        f"python tools/verify_proof.py {proof_filename}",
         f"# → {'VALID' if valid else 'INVALID'}",
         "```",
         "",

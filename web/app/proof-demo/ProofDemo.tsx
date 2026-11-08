@@ -75,7 +75,8 @@ export default function ProofDemo() {
   const [busy, setBusy] = useState(false);
 
   const tampered = proof.claim.evidence.details.summary !== ORIGINAL.claim.evidence.details.summary;
-  const status = useMemo(() => tampered ? "TAMPERED" : verified === true ? "INTEGRITY VERIFIED" : "UNVERIFIED", [tampered, verified]);
+  const status = useMemo(() => tampered ? "TAMPERED" : verified === true ? "DIGEST MATCHES" : verified === false ? "DIGEST MISMATCH" : "UNVERIFIED", [tampered, verified]);
+  const signatureState = (proof as any).signature ? "present-unverified" : "absent";
 
   async function verify() {
     setBusy(true);
@@ -127,8 +128,8 @@ export default function ProofDemo() {
 
       <section className="proof-demo-banner">
         <div>
-          <span className={`status ${status === "INTEGRITY VERIFIED" ? "ok" : "attention"}`}>{status}</span>
-          <strong>{verified === true ? "Digest matches the proof." : verified === false ? "Digest mismatch detected." : "Ready to verify."}</strong>
+          <span className={`status ${status === "DIGEST MATCHES" ? "ok" : "attention"}`}>{status}</span>
+          <strong>{verified === true ? "Digest matches — this checks content integrity only. Full verification (structure, consistency, signature, trust): python tools/verify_proof.py proof.json" : verified === false ? "Digest mismatch detected." : "Ready to verify. This browser check covers content integrity only, not the six-level verification."}</strong>
         </div>
         <div className="actions">
           <button className="button primary" onClick={verify} disabled={busy}>{busy ? "Verifying…" : "Verify proof"}</button>
@@ -160,7 +161,18 @@ export default function ProofDemo() {
       <section className="proof-card action-detail">
         <div className="proof-card-head"><div><p className="eyebrow">Integrity</p><h2>Content digest</h2></div><span className="mono">{proof.content_sha256}</span></div>
         <p className="proof-explain">Habitat hashes the canonical proof contents, excluding the generated timestamp and the digest itself. Change one field and the digest no longer matches.</p>
-        <div className="digest-state"><span className={verified === false ? "bad" : "good"}>{verified === false ? "✕ DIGEST MISMATCH" : "✓ SHA-256 CONTENT DIGEST"}</span><code>{proof.content_sha256}</code></div>
+        <div className="digest-state"><span className={verified === false ? "bad" : "good"}>{verified === false ? "✕ DIGEST MISMATCH" : verified === true ? "✓ DIGEST MATCHES" : "○ SHA-256 CONTENT DIGEST"}</span><code>{proof.content_sha256}</code></div>
+      </section>
+
+      <section className="proof-card">
+        <h2>Assurance (six-level)</h2>
+        <Row label="Structural validity" value={verified === true ? "valid (digest only in browser)" : "not checked in browser"} />
+        <Row label="Content integrity" value={verified === true ? "valid — digest matches" : verified === false ? "invalid — digest mismatch" : "not checked yet"} />
+        <Row label="Internal consistency" value="not checked in browser" />
+        <Row label="Signature" value={signatureState} />
+        {signatureState === "present-unverified" && <p className="proof-explain">A signature is present but has not been checked. Run the verifier with your TrustRegistry to assess publisher trust.</p>}
+        <Row label="Publisher trust" value="not-assessed" />
+        <Row label="External truth" value="not-established" />
       </section>
 
       <section className="notice">

@@ -54,13 +54,20 @@ Requirements:
 - SQLite (included with Python)
 - No third-party runtime dependencies
 
-Install the project according to the repository's packaging configuration, then run:
+Install Habitat, then initialize a local database:
 
 ```bash
-python -m pytest -q
+pip install habitat            # add: pip install 'habitat[signing]' for Ed25519 signing
+# From a source checkout instead: pip install -e .
+
+habitat init --config examples/simple.yaml
+habitat demo                   # records one sample action (run-42) — labelled sample data
 ```
 
 ### Generate portable proof
+
+`habitat demo` records a sample `run_job` action with run ID `run-42`, so the
+command below succeeds on a fresh database. (`habitat seed` is an alias.)
 
 ```bash
 habitat prove \
@@ -68,8 +75,19 @@ habitat prove \
   --claim "deployed v1.2.3 to production" \
   -o proof.json --card
 
-python tools/verify_proof.py proof.json
+python tools/verify_proof.py proof.json   # → VALID, exit 0
 ```
+
+Notes:
+
+- `--card` writes `proof.md` alongside `proof.json` and names the proof file
+  that was actually written. Without `-o`, `--card` defaults to `proof.json`.
+- If `prove` is rejected (for example, an unknown `--run-id`), it prints an
+  explanation, what would change the verdict, and the next action — it does
+  not just print a reason code.
+- The proof created from `habitat demo` is sample data: it shows the claim
+  matches evidence in the local ledger. It does not prove the claim is true
+  in the world.
 
 For an executable end-to-end example:
 
