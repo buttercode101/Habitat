@@ -67,6 +67,27 @@ export default function QuickStart() {
         ))}
       </div>
       <p className="quickstart-boundary"><strong>Sample-data boundary:</strong> <code>habitat demo</code> creates labelled demonstration evidence. A valid proof confirms the integrity and consistency of recorded evidence; it does not prove the example deployment happened in the outside world.</p>
+      <div className="quickstart-local">
+        <div className="quickstart-local-heading">
+          <p className="eyebrow">Optional · local dashboard</p>
+          <h3>See your local claims in the web interface.</h3>
+          <p>Run the API and web UI on your own machine. Agent events, claims and proofs stay in your local Habitat database.</p>
+        </div>
+        <div className="quickstart-local-commands">
+          <article className="quickstart-local-command">
+            <span>TERMINAL 1 · HABITAT API</span>
+            <pre><code>{"habitat --db .habitat/habitat.db serve --host 127.0.0.1 --port 8787"}</code></pre>
+            <button className="quickstart-copy" type="button" onClick={() => copy("api", "habitat --db .habitat/habitat.db serve --host 127.0.0.1 --port 8787")}>{copied === "api" ? "Copied" : "Copy command"}</button>
+          </article>
+          <article className="quickstart-local-command">
+            <span>TERMINAL 2 · WEB UI</span>
+            <pre><code>{"cd web\nHABITAT_API_URL=http://127.0.0.1:8787 HABITAT_API_TOKEN=local-only npm run dev"}</code></pre>
+            <button className="quickstart-copy" type="button" onClick={() => copy("web", "cd web\nHABITAT_API_URL=http://127.0.0.1:8787 HABITAT_API_TOKEN=local-only npm run dev")}>{copied === "web" ? "Copied" : "Copy commands"}</button>
+          </article>
+        </div>
+        <p className="quickstart-local-note">Keep the API bound to <code>127.0.0.1</code>. The <code>local-only</code> value is for the local web proxy; do not expose the API to a network without configuring a real server secret.</p>
+        <a className="quickstart-local-link" href="http://127.0.0.1:3000/dashboard">Open your local dashboard ↗</a>
+      </div>
       <div className="quickstart-feedback" role="status" aria-live="polite">{copied ? "Commands copied to clipboard." : error}</div>
     </section>
   );
