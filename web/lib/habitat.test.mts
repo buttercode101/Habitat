@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { getStatus, getClaims, getProof, verifyClaim, habitatFetch } from "./habitat.ts";
 import demoProof from "./demo-proof.json" with { type: "json" };
+import { proofDownloadResponse } from "./proof-download.ts";
 
 test("real HTTP upstream failures cannot become live dashboard data", async () => {
   const original = { url: process.env.HABITAT_API_URL, token: process.env.HABITAT_API_TOKEN };
@@ -48,4 +49,40 @@ test("real HTTP upstream failures cannot become live dashboard data", async () =
     }
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
+});
+
+
+test("production allows HTTP only for a loopback Habitat backend", async () => {
+  const original = {
+    url: process.env.HABITAT_API_URL,
+    token: process.env.HABITAT_API_TOKEN,
+    nodeEnv: process.env.NODE_ENV,
+  };
+  const server = createServer((_req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ id: "local", name: "Local Habitat", status: "healthy", jobs: 0, active_signals: 0, agents: 0 }));
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address() as { port: number };
+  process.env.NODE_ENV = "production";
+  process.env.HABITAT_API_TOKEN = "local-test-token";
+  process.env.HABITAT_API_URL = `http://127.0.0.1:${address.port}`;
+  try {
+    assert.equal((await getStatus()).name, "Local Habitat");
+    process.env.HABITAT_API_URL = "http://example.com";
+    await assert.rejects(getStatus(), /HABITAT_API_URL must use HTTPS/);
+  } finally {
+    for (const [key, value] of [["HABITAT_API_URL", original.url], ["HABITAT_API_TOKEN", original.token], ["NODE_ENV", original.nodeEnv]]) {
+      if (value === undefined) delete process.env[key!]; else process.env[key!] = value;
+    }
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});
+
+test("proof downloads use an attachment disposition and a sanitized filename", async () => {
+  const response = proofDownloadResponse({ claim_id: "claim-123", proof: { ok: true } }, "claim/unsafe");
+  assert.equal(response.headers.get("content-disposition"), 'attachment; filename="habitat-proof-claim_unsafe.json"');
+  assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await response.json(), { claim_id: "claim-123", proof: { ok: true } });
 });
