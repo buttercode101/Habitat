@@ -24,3 +24,9 @@
 .claim-top .mono,.claim-card .meta b{overflow-wrap:anywhere;word-break:break-word}
 .nav-links{min-width:0;max-width:100%;flex-wrap:wrap}
 @media(max-width:480px){.topbar{height:auto;min-height:48px;flex-wrap:wrap;gap:10px}.topbar .nav-links{justify-content:flex-start;gap:6px}.nav-links .pill{font-size:8px;padding:5px 7px}}
+
+/* Demo evidence is visually distinct from live operational status. */
+.status.sample{border-color:#7b6538;background:#211b10;color:#e4c58a}
+.sample-notice{border-color:#705c35;background:#19150d}
+.sample-notice strong{color:#e4c58a}
+.sample-notice span{color:#b9a57f}
