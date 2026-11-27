@@ -38,8 +38,9 @@ function baseUrl() {
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
     throw new Error("HABITAT_API_URL must be an HTTP(S) URL without credentials, query or fragment");
   }
-  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
-    throw new Error("HABITAT_API_URL must use HTTPS in production");
+  const loopback = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(url.hostname.toLowerCase());
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:" && !loopback) {
+    throw new Error("HABITAT_API_URL must use HTTPS in production unless it targets loopback");
   }
   return url.toString().replace(/\/$/, "");
 }
