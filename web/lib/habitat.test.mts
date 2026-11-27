@@ -64,7 +64,7 @@ test("production allows HTTP only for a loopback Habitat backend", async () => {
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const address = server.address() as { port: number };
-  process.env.NODE_ENV = "production";
+  (process.env as Record<string, string | undefined>).NODE_ENV = "production";
   process.env.HABITAT_API_TOKEN = "local-test-token";
   process.env.HABITAT_API_URL = `http://127.0.0.1:${address.port}`;
   try {
