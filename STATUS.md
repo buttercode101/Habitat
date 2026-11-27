@@ -2,13 +2,33 @@
 
 > Canonical restart point. Read this before making a material change.
 
-**Last reconciled:** 2026-11-08 (final phase, commit `2194d58`, branch `flagship-excellence`)  
+**Last reconciled:** 2026-11-27 (production commit `c2e6fe1`, branch `main`)  
 **Repository:** `buttercode101/Habitat`  
 **Default branch:** `main`  
 **Package version:** `1.3.0`  
 **Python:** `>=3.10`  
 **Runtime dependencies:** none; optional Ed25519 signing dependency  
 **License:** MIT
+
+
+## Reconciliation — 2026-11-27
+
+### Current production and user workflows
+
+- Production: `https://habitat-za.vercel.app`, Vercel deployment `dpl_24UfEvhbZpF5DdgYt7GHTWgSqHJQ`, source commit `c2e6fe1` — **READY**.
+- The homepage now contains a no-account local quickstart: clone/install → initialize → record explicitly labelled sample data → generate portable proof → verify with the standalone verifier.
+- The dashboard and claim inspector expose an in-place verification action for backend-backed claims. The UI reports the verifier's actual verdict, ledger response and digest; it does not infer success when no verdict is returned.
+- When the hosted backend is unavailable, the dashboard explicitly switches to demo mode and identifies the checked-in proof as sample data. The hosted deployment is still a presentation/demo surface, not a hosted evidence service.
+- The proof inspector's browser workflow was exercised end to end: digest match, simulated tampering → mismatch, reset → restored digest, and JSON download.
+- Browser QA on production: 4 routes × 8 widths (320, 360, 375, 390, 430, 768, 1024, 1440) — 32/32 without horizontal overflow. Quickstart clipboard, mobile navigation and reduced-motion behavior passed; no browser runtime errors.
+- Current local Python suite: 107 passed, 5 skipped. Next.js production build and TypeScript checks pass. GitHub Actions test and web workflows passed for the final responsive-fix PR.
+
+### Current limitations — still explicit
+
+- No persistent hosted Habitat backend is deployed. The live dashboard's demo fallback is not live agent telemetry.
+- Hosted claim verification requires a configured Habitat service; without it, the API proxy correctly reports the backend as unavailable.
+- Authentication, persistent hosted operations, operational runbooks and a production service SLA are not claimed.
+- A valid proof establishes structural validity, content integrity and internal consistency only to the extent checked by the verifier. It does not independently establish publisher trust or external-world truth.
 
 ## What Habitat is today
 

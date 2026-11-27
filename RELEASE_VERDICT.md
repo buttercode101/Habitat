@@ -1,7 +1,7 @@
 # Habitat — Release Verdict (Final Phase)
 
-**Date:** 2026-11-08
-**Repo:** `buttercode101/Habitat` @ `2194d58` (branch `flagship-excellence`)
+**Date:** 2026-11-27
+**Repo:** `buttercode101/Habitat` @ `c2e6fe1` (branch `main`)
 **Live:** https://habitat-za.vercel.app
 **Package:** `habitat 1.3.0`, MIT, Python ≥3.10, zero runtime deps (+ optional `cryptography` for Ed25519)
 
@@ -26,14 +26,29 @@ and `RELEASE_ACCEPTANCE_REPORT.md` (73/100) converge on the same sentence:
 > turns agent events into policy-checked claims and portable proof. It is not a hosted service, and must not
 > be sold as one.*
 
-## 2. Scorecard (inherited, reaffirmed — not re-scored upward without new evidence)
+## 2. Current QA evidence — 2026-11-27
+
+| Check | Result |
+|---|---|
+| Habitat Python suite | **107 passed, 5 skipped**, exit 0 |
+| Next.js production build + TypeScript | Passed |
+| GitHub Actions | Final Python test workflow and web-build workflow passed |
+| Production deployment | `habitat-za.vercel.app` — READY at `c2e6fe1` |
+| Responsive browser matrix | 4 routes × 8 widths from 320px to 1440px — **32/32 no horizontal overflow** |
+| Proof interaction | Digest match → tamper mismatch → reset → match; JSON download passed |
+| Quickstart | Clipboard copy, mobile navigation and reduced-motion checks passed |
+| Browser runtime errors | None observed in the exercised routes |
+
+The new local quickstart covers installation, initialization, sample event recording, proof generation and standalone verification without an account. The dashboard now provides an in-place verification action for real backend-backed claims. The hosted backend is still not deployed; the public dashboard therefore continues to disclose its demo fallback rather than presenting sample records as live telemetry.
+
+## 3. Scorecard (inherited, reaffirmed — not re-scored upward without new evidence)
 
 Core 16/20 · E2E 14/20 · UI/UX 11/15 · Responsive 6/10 · Arch/Data 8/10 · Security 7/10 · Perf 4/5 · A11y 4/5 · Ops 3/5 = **73/100**
 
 New evidence this phase (below) supports the library/CLI half; it does not move the service score, because the
 service-side gaps (deployment, runbook, auth, real-agent integration) are unchanged.
 
-## 3. QA evidence — 2026-11-08 (this phase, commit `2194d58`)
+## 4. Historical QA evidence — 2026-11-08 (this phase, commit `2194d58`)
 
 | Check | Command | Result |
 |---|---|---|
@@ -42,7 +57,7 @@ service-side gaps (deployment, runbook, auth, real-agent integration) are unchan
 | Fresh-DB smoke | `habitat --db <fresh> init --config examples/simple.yaml` → `demo` → `prove --run-id run-42 -o proof.json --card` → `tools/verify_proof.py proof.json` | **VALID, exit 0 at every step**; digest `e24bf317…48934`; `signature: absent`, `external_truth: not-established` (correctly scoped) |
 | Demo → prove regression | (UX_AUDIT headline defect: README prove on fresh DB failed) | **Fixed and re-verified** — `habitat demo` seeds `run-42` with `sample: true`; the advertised command now succeeds |
 
-## 4. Honest demo labelling — audited this phase
+## 5. Honest demo labelling — audited this phase
 
 | Surface | Label present? | Evidence |
 |---|---|---|
@@ -58,7 +73,7 @@ without its boundary sentence. Mitigation in place: the boundary travels inside 
 verifier output (`authenticity: not-established`), so any *verifiable* copy stays honest even if a screenshot doesn't.
 Do not strip `sample: true` from demo actions — it is load-bearing.
 
-## 5. What would change this verdict
+## 6. What would change this verdict
 
 | To flip… | Required evidence |
 |---|---|
@@ -67,7 +82,7 @@ Do not strip `sample: true` from demo actions — it is load-bearing.
 | Monetization: real | One executed H-experiment with recorded outcome (`MONETIZATION.md` §6) — especially a buyer test. Until then: hypothesis. |
 | "Proxy of truth" claims | Never, by design — `external_truth` stays `not-established` by the verifier alone. This is a product boundary, not a missing feature. |
 
-## 6. Release posture
+## 7. Release posture
 
 - **Do not merge/push/deploy from this phase** — docs committed on `flagship-excellence` only, per brief.
 - Next human decision (owner): persistent-host deployment *or* explicit library-only positioning. Either is
