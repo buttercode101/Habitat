@@ -13,12 +13,13 @@ Habitat records trusted agent actions, correlates work with run IDs, verifies cl
 
 | | |
 |---|---|
-| **As a library + CLI + standalone verifier** | **Ready.** 116/116 tests green, `prove_run.py` → `VALID`, fresh-DB `demo → prove → verify` smoke green (2026-11-08). |
-| **As a production evidence service** | **Not ready (73/100).** No production deployment, no key-management runbook, no authenticated access layer. The web dashboard is a **disclosed demo** — it falls back to checked-in demo proof because the live backend is unavailable. |
+| **Local CLI + library + standalone verifier** | **Ready as a local-first product.** Latest Python suite: 107 passed, 5 skipped; clean-database `init → demo → prove → verify` and standalone proof verification passed. |
+| **Local web workflow** | **Verified.** Run the API on loopback and inspect actual local claims, verify and download proof JSON. No hosted account or placeholder proxy token is required for loopback. |
+| **Public web application** | Static product/demo and historical proof explorer. Sample claims are labelled; proof boundaries are explicit. It is not a hosted live evidence service. |
+| **Hosted production evidence service** | **Not ready.** Persistent hosting, production authentication/authorization and key management are not deployed. |
 | **Traction / pricing** | **None claimed.** No users, revenue, or prices exist yet; see [MONETIZATION.md](MONETIZATION.md) — hypothesis only. |
 
-The full, evidence-backed verdict (and what would change it) is in [RELEASE_VERDICT.md](RELEASE_VERDICT.md).
-Five independent perspectives — developer, security, operator, buyer, maintainer — converge in [INDEPENDENT_REVIEW.md](INDEPENDENT_REVIEW.md).
+Latest [product acceptance evidence and remaining boundaries](PRODUCT_ACCEPTANCE.md). The [release verdict](RELEASE_VERDICT.md) and [independent reviews](INDEPENDENT_REVIEW.md) retain their dated historical scope.
 
 > **Demo data is labelled as demo** — in CLI output, inside `proof.json` (`"sample": true`), on the proof card's
 > assurance boundary, and on the dashboard. A `VERIFIED` demo proof means *"the claim matches evidence in the
