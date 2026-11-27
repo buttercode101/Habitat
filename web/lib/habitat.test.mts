@@ -65,10 +65,12 @@ test("production allows HTTP only for a loopback Habitat backend", async () => {
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const address = server.address() as { port: number };
   (process.env as Record<string, string | undefined>).NODE_ENV = "production";
-  process.env.HABITAT_API_TOKEN = "local-test-token";
+  delete process.env.HABITAT_API_TOKEN;
   process.env.HABITAT_API_URL = `http://127.0.0.1:${address.port}`;
   try {
     assert.equal((await getStatus()).name, "Local Habitat");
+    process.env.HABITAT_API_URL = "https://example.com";
+    await assert.rejects(getStatus(), /HABITAT_API_TOKEN is required for remote Habitat backends/);
     process.env.HABITAT_API_URL = "http://example.com";
     await assert.rejects(getStatus(), /HABITAT_API_URL must use HTTPS/);
   } finally {
