@@ -39,3 +39,7 @@ jobs:
         run: npm test
       - name: Build Vercel surface
         run: npm run build
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+      - name: Run browser workflow and responsive regressions
+        run: npm run test:e2e
