@@ -27,6 +27,8 @@ export default async function ClaimPage({ params }: { params: Promise<{ id: stri
     const proof = object(result.proof);
     const claim = object(proof.claim);
     const evidence = object(claim.evidence);
+    const evidenceDetails = object(evidence.details);
+    const sample = evidence.sample === true || evidenceDetails.sample === true;
     const action = actionFor(proof, evidence.action_id);
     const signature = object(proof.signature);
     const hasSignature = Object.keys(signature).length > 0;
@@ -49,6 +51,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ id: stri
             <Row label="Verdict" value={result.verdict ?? claim.status} />
             <Row label="Expected" value={claim.expected_status} />
             <Row label="Evidence source" value={evidence.source} />
+            <Row label="Evidence classification" value={sample ? "Sample demonstration data" : "Recorded evidence"} />
             <Row label="Action ID" value={evidence.action_id} />
             <Row label="Run ID" value={claim.run_id} />
             <Row label="Job ID" value={claim.job_id} />
@@ -72,6 +75,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ id: stri
             </div>
           </section>
         )}
+        {sample && <section className="notice sample-notice"><strong>Sample data — not live activity</strong><span>This claim was created by Habitat demo commands. It is useful for exercising the proof workflow, but it is not evidence that a real agent performed this action.</span></section>}
         <section className="notice">
           <strong>Interpretation boundary</strong>
           <span>A valid proof establishes the integrity and consistency of the supplied evidence. It does not by itself establish publisher trust or real-world truth.</span>
