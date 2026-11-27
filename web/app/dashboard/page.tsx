@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+function isSampleClaim(claim: Claim) {
+  const evidence = claim.evidence && typeof claim.evidence === "object" ? claim.evidence as Record<string, unknown> : {};
+  const details = evidence.details && typeof evidence.details === "object" ? evidence.details as Record<string, unknown> : {};
+  return evidence.sample === true || details.sample === true;
+}
+
 function errorMessage(error: unknown) {
   const cause = error instanceof Error ? error.cause : undefined;
   const rawCode = cause && typeof cause === "object" && "code" in cause ? String(cause.code) : "UPSTREAM_ERROR";
@@ -69,6 +75,7 @@ function Dashboard({ status, claims, attention }: { status: Awaited<ReturnType<t
       <header className="topbar"><Link className="brand" href="/">Habitat</Link><span className="pill">LIVE ACCOUNTABILITY SURFACE</span></header>
       <section className="hero compact"><Link className="back" href="/">← Habitat home</Link><p className="eyebrow">{status.name}</p><h1>Inspect what your agents actually did.</h1><p className="lede">A live inspection surface over Habitat's persistent ledger, policy checks, claims and portable proofs.</p><div className="flow"><span>Agent</span><i>→</i><span>Event</span><i>→</i><span>Ledger</span><i>→</i><span>Verify</span><i>→</i><span>Proof</span></div></section>
       <section className="metrics" aria-label="Habitat status"><Metric label="Jobs" value={status.jobs} /><Metric label="Agents" value={status.agents} /><Metric label="Active signals" value={status.active_signals} /><Metric label="Needs attention" value={attention} /></section>
+      {claims.some(isSampleClaim) && <section className="notice sample-notice" role="note"><strong>Sample evidence detected</strong><span>One or more claims were created by Habitat demo commands. They are labelled individually and must not be treated as live agent activity.</span></section>}
       <section className="section-head"><div><p className="eyebrow">Claims</p><h2>Evidence worth inspecting</h2></div><span className="muted">Live from Habitat</span></section>
       {claims.length === 0 ? <div className="empty"><strong>No claims recorded yet.</strong><span>Connect an agent to Habitat and record a policy-checked action. New claims will appear here when evidence is available.</span></div> : <div className="claims">{claims.map((claim) => <ClaimCard key={claim.id} claim={claim} />)}</div>}
       <footer><Link href="/">Habitat</Link> · Vercel is the presentation layer. Habitat remains the source of truth.</footer>
@@ -82,5 +89,6 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 
 function ClaimCard({ claim, demo = false }: { claim: Claim; demo?: boolean }) {
   const verified = claim.status === "verified";
-  return <article className="claim-card"><div className="claim-top"><span className={`status ${verified ? "ok" : "attention"}`}>{claim.status || "unknown"}</span><span className="mono">{claim.id}</span></div><h3>{claim.claim || claim.statement || "Claim without a statement"}</h3><div className="meta"><span>Agent <b>{claim.agent_id || "—"}</b></span><span>Run <b>{claim.run_id || "—"}</b></span><span>Expected <b>{claim.expected_status || "—"}</b></span></div><div className="actions">{demo ? <Link className="button primary" href="/dashboard#proof-demo">Inspect proof</Link> : <><Link className="button primary" href={`/claims/${encodeURIComponent(claim.id)}`}>Inspect claim</Link><VerifyAction endpoint={`/api/claims/${encodeURIComponent(claim.id)}/verify`} /></>}</div></article>;
+  const sample = isSampleClaim(claim);
+  return <article className="claim-card"><div className="claim-top"><span className={`status ${sample ? "sample" : verified ? "ok" : "attention"}`}>{sample ? `SAMPLE · ${claim.status || "UNKNOWN"}` : claim.status || "unknown"}</span><span className="mono">{claim.id}</span></div><h3>{claim.claim || claim.statement || "Claim without a statement"}</h3><div className="meta"><span>Agent <b>{claim.agent_id || "—"}</b></span><span>Run <b>{claim.run_id || "—"}</b></span><span>Expected <b>{claim.expected_status || "—"}</b></span></div><div className="actions">{demo ? <Link className="button primary" href="/dashboard#proof-demo">Inspect proof</Link> : <><Link className="button primary" href={`/claims/${encodeURIComponent(claim.id)}`}>Inspect claim</Link><VerifyAction endpoint={`/api/claims/${encodeURIComponent(claim.id)}/verify`} /></>}</div></article>;
 }
