@@ -25,6 +25,10 @@ async function boundedText(response: Response) {
   } finally { reader.releaseLock(); }
 }
 
+function isLoopbackHost(hostname: string) {
+  return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(hostname.toLowerCase());
+}
+
 function baseUrl() {
   const raw = process.env.HABITAT_API_URL?.trim();
   if (!raw) throw new Error("HABITAT_API_URL is not configured");
@@ -38,16 +42,21 @@ function baseUrl() {
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
     throw new Error("HABITAT_API_URL must be an HTTP(S) URL without credentials, query or fragment");
   }
-  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
-    throw new Error("HABITAT_API_URL must use HTTPS in production");
+  const loopback = isLoopbackHost(url.hostname);
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:" && !loopback) {
+    throw new Error("HABITAT_API_URL must use HTTPS in production unless it targets loopback");
   }
   return url.toString().replace(/\/$/, "");
 }
 
 function headers() {
   const token = process.env.HABITAT_API_TOKEN?.trim();
-  if (!token) throw new Error("HABITAT_API_TOKEN is not configured");
-  return { Authorization: `Bearer ${token}`, Accept: "application/json" };
+  const loopback = isLoopbackHost(new URL(baseUrl()).hostname);
+  if (!token && !loopback) throw new Error("HABITAT_API_TOKEN is required for remote Habitat backends");
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Accept: "application/json",
+  };
 }
 
 export async function habitatFetch<T = Json>(path: string, init: RequestInit = {}): Promise<T> {

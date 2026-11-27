@@ -10,10 +10,15 @@ test('local quickstart copies real commands and discloses sample evidence', asyn
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toContain('git clone https://github.com/buttercode101/Habitat.git');
   expect(copied).toContain('python -m pip install -e .');
+  await expect(page.getByRole('heading', { name: 'See your local claims in the web interface.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Copy commands' }).last().click();
+  const localWebCommand = await page.evaluate(() => navigator.clipboard.readText());
+  expect(localWebCommand).toContain('HABITAT_API_URL=http://127.0.0.1:8787');
+  await expect(page.getByRole('link', { name: 'Open your local dashboard' })).toHaveAttribute('href', 'http://127.0.0.1:3000/dashboard');
 });
 
 test('proof inspector verifies, detects tampering, resets and exports', async ({ page }) => {
-  const response = await page.goto('/dashboard');
+  const response = await page.goto('http://127.0.0.1:3213/dashboard');
   expect(response?.status()).toBe(200);
   await expect(page.getByText('DEMO MODE').first()).toBeVisible();
   await expect(page.getByText('Live backend unavailable').first()).toBeVisible();
@@ -31,6 +36,30 @@ test('proof inspector verifies, detects tampering, resets and exports', async ({
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download JSON' }).click();
   expect((await downloadPromise).suggestedFilename()).toBe('habitat-proof-rosendaltown.json');
+});
+
+
+test('local Habitat API powers real claims, verification and proof downloads', async ({ page }) => {
+  const response = await page.goto('/dashboard');
+  expect(response?.status()).toBe(200);
+  await expect(page.getByText('LIVE ACCOUNTABILITY SURFACE').first()).toBeVisible();
+  await expect(page.getByText('deployed v1.2.3 to production').first()).toBeVisible();
+  await expect(page.getByText('Sample evidence detected')).toBeVisible();
+  await expect(page.getByText(/SAMPLE · verified/i).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Verify now' }).first().click();
+  await expect(page.getByText('Verifier response: verified').first()).toBeVisible();
+  await expect(page.getByText('Ledger integrity: intact').first()).toBeVisible();
+
+  await page.getByRole('link', { name: 'Inspect claim' }).click();
+  await expect(page.getByText('Sample data — not live activity')).toBeVisible();
+  await page.getByRole('button', { name: 'Verify now' }).click();
+  await expect(page.getByText('Verifier response: verified')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'Download proof JSON' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^habitat-proof-[a-f0-9-]+\.json$/);
 });
 
 test('all public routes fit phone, tablet and desktop widths', async ({ page }) => {
