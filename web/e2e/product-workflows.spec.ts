@@ -59,7 +59,7 @@ test('local Habitat API powers real claims, verification and proof downloads', a
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('link', { name: 'Download proof JSON' }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/^habitat-proof-[a-f0-9-]+\\.json$/);
+  expect(download.suggestedFilename()).toMatch(/^habitat-proof-[a-f0-9-]+\.json$/);
 });
 
 test('all public routes fit phone, tablet and desktop widths', async ({ page }) => {
