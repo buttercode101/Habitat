@@ -1,4 +1,5 @@
 import Link from "next/link";
+import QuickStart from "./QuickStart";
 
 const GITHUB_URL = "https://github.com/buttercode101/Habitat";
 
@@ -66,6 +67,8 @@ export default function Home() {
           <Step n="04" title="Prove" text="Export a portable proof bundle that can be independently verified outside Habitat." />
         </div>
       </section>
+
+      <QuickStart />
 
       <section className="dark-section" id="why">
         <div className="shell-width split-section">
