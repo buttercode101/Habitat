@@ -25,7 +25,7 @@ export default defineConfig({
       timeout: 30_000,
     },
     {
-      command: `HABITAT_API_URL=http://127.0.0.1:8787 HABITAT_API_TOKEN=local-only npm run start -- --hostname 127.0.0.1 --port ${port}`,
+      command: `HABITAT_API_URL=http://127.0.0.1:8787 npm run start -- --hostname 127.0.0.1 --port ${port}`,
       url: `http://127.0.0.1:${port}`,
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
