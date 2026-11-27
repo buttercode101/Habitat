@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getClaims, getStatus, type Claim } from "../../lib/habitat";
 import ProofDemo from "./ProofDemo";
+import VerifyAction from "../VerifyAction";
 import demoProof from "../../lib/demo-proof.json";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,6 @@ export const metadata: Metadata = {
 function errorMessage(error: unknown) {
   const cause = error instanceof Error ? error.cause : undefined;
   const rawCode = cause && typeof cause === "object" && "code" in cause ? String(cause.code) : "UPSTREAM_ERROR";
-  // Log only a bounded error code; never the upstream URL, token or payload.
   console.warn("Habitat upstream unavailable", { code: /^[A-Z0-9_]{1,64}$/.test(rawCode) ? rawCode : "UPSTREAM_ERROR" });
   return "Unable to reach the Habitat backend";
 }
@@ -63,14 +63,14 @@ function DemoDashboard({ error }: { error: string }) {
   );
 }
 
-function Dashboard({ status, claims, attention, live }: { status: Awaited<ReturnType<typeof getStatus>>; claims: Claim[]; attention: number; live: boolean }) {
+function Dashboard({ status, claims, attention }: { status: Awaited<ReturnType<typeof getStatus>>; claims: Claim[]; attention: number; live: boolean }) {
   return (
     <main id="main-content" tabIndex={-1} className="shell">
-      <header className="topbar"><Link className="brand" href="/">Habitat</Link><span className="pill">{live ? "LIVE ACCOUNTABILITY SURFACE" : "ACCOUNTABILITY SURFACE"}</span></header>
+      <header className="topbar"><Link className="brand" href="/">Habitat</Link><span className="pill">LIVE ACCOUNTABILITY SURFACE</span></header>
       <section className="hero compact"><Link className="back" href="/">← Habitat home</Link><p className="eyebrow">{status.name}</p><h1>Inspect what your agents actually did.</h1><p className="lede">A live inspection surface over Habitat's persistent ledger, policy checks, claims and portable proofs.</p><div className="flow"><span>Agent</span><i>→</i><span>Event</span><i>→</i><span>Ledger</span><i>→</i><span>Verify</span><i>→</i><span>Proof</span></div></section>
       <section className="metrics" aria-label="Habitat status"><Metric label="Jobs" value={status.jobs} /><Metric label="Agents" value={status.agents} /><Metric label="Active signals" value={status.active_signals} /><Metric label="Needs attention" value={attention} /></section>
       <section className="section-head"><div><p className="eyebrow">Claims</p><h2>Evidence worth inspecting</h2></div><span className="muted">Live from Habitat</span></section>
-      {claims.length === 0 ? <div className="empty">No claims recorded yet. Habitat will surface them here when agents produce policy-checked evidence.</div> : <div className="claims">{claims.map((claim) => <ClaimCard key={claim.id} claim={claim} />)}</div>}
+      {claims.length === 0 ? <div className="empty"><strong>No claims recorded yet.</strong><span>Connect an agent to Habitat and record a policy-checked action. New claims will appear here when evidence is available.</span></div> : <div className="claims">{claims.map((claim) => <ClaimCard key={claim.id} claim={claim} />)}</div>}
       <footer><Link href="/">Habitat</Link> · Vercel is the presentation layer. Habitat remains the source of truth.</footer>
     </main>
   );
@@ -82,5 +82,5 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 
 function ClaimCard({ claim, demo = false }: { claim: Claim; demo?: boolean }) {
   const verified = claim.status === "verified";
-  return <article className="claim-card"><div className="claim-top"><span className={`status ${verified ? "ok" : "attention"}`}>{claim.status || "unknown"}</span><span className="mono">{claim.id}</span></div><h3>{claim.claim || claim.statement || "Claim without a statement"}</h3><div className="meta"><span>Agent <b>{claim.agent_id || "—"}</b></span><span>Run <b>{claim.run_id || "—"}</b></span><span>Expected <b>{claim.expected_status || "—"}</b></span></div><div className="actions">{demo ? <Link className="button primary" href="/dashboard#proof-demo">Inspect proof</Link> : <><Link className="button primary" href={`/claims/${encodeURIComponent(claim.id)}`}>Inspect claim</Link><a className="button" href={`/api/claims/${encodeURIComponent(claim.id)}/verify`}>Verify now</a></>}</div></article>;
+  return <article className="claim-card"><div className="claim-top"><span className={`status ${verified ? "ok" : "attention"}`}>{claim.status || "unknown"}</span><span className="mono">{claim.id}</span></div><h3>{claim.claim || claim.statement || "Claim without a statement"}</h3><div className="meta"><span>Agent <b>{claim.agent_id || "—"}</b></span><span>Run <b>{claim.run_id || "—"}</b></span><span>Expected <b>{claim.expected_status || "—"}</b></span></div><div className="actions">{demo ? <Link className="button primary" href="/dashboard#proof-demo">Inspect proof</Link> : <><Link className="button primary" href={`/claims/${encodeURIComponent(claim.id)}`}>Inspect claim</Link><VerifyAction endpoint={`/api/claims/${encodeURIComponent(claim.id)}/verify`} /></>}</div></article>;
 }
