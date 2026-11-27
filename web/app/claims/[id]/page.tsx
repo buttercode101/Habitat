@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getProof } from "../../../lib/habitat";
+import VerifyAction from "../../VerifyAction";
 
 export const dynamic = "force-dynamic";
 
@@ -75,20 +76,20 @@ export default async function ClaimPage({ params }: { params: Promise<{ id: stri
           <strong>Interpretation boundary</strong>
           <span>A valid proof establishes the integrity and consistency of the supplied evidence. It does not by itself establish publisher trust or real-world truth.</span>
         </section>
-        <div className="actions">
-          <a className="button primary" href={`/api/claims/${encodeURIComponent(id)}/verify`}>Verify now</a>
-          <a className="button" href={`/api/claims/${encodeURIComponent(id)}/proof`}>Proof JSON</a>
+        <div className="actions verify-actions">
+          <VerifyAction endpoint={`/api/claims/${encodeURIComponent(id)}/verify`} />
+          <a className="button" href={`/api/claims/${encodeURIComponent(id)}/proof`}>Download proof JSON</a>
         </div>
       </main>
     );
-  } catch (error) {
+  } catch {
     return (
       <main id="main-content" tabIndex={-1} className="shell">
         <header className="topbar"><Link className="brand" href="/">Habitat</Link><span className="pill">PROOF INSPECTOR</span></header>
         <section className="hero compact">
           <p className="eyebrow">Claim unavailable</p>
           <h1>Habitat could not load this proof.</h1>
-          <p className="lede">{error instanceof Error ? error.message : "Unknown backend error"}</p>
+          <p className="lede">The backend could not provide a valid proof for this claim. Check the service connection and try again.</p>
           <Link className="button primary" href="/dashboard">Back to dashboard</Link>
         </section>
       </main>
