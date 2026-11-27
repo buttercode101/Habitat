@@ -48,7 +48,7 @@ Core 16/20 · E2E 14/20 · UI/UX 11/15 · Responsive 6/10 · Arch/Data 8/10 · S
 New evidence this phase (below) supports the library/CLI half; it does not move the service score, because the
 service-side gaps (deployment, runbook, auth, real-agent integration) are unchanged.
 
-## 3. QA evidence — 2026-11-08 (this phase, commit `2194d58`)
+## 4. Historical QA evidence — 2026-11-08 (this phase, commit `2194d58`)
 
 | Check | Command | Result |
 |---|---|---|
@@ -57,7 +57,7 @@ service-side gaps (deployment, runbook, auth, real-agent integration) are unchan
 | Fresh-DB smoke | `habitat --db <fresh> init --config examples/simple.yaml` → `demo` → `prove --run-id run-42 -o proof.json --card` → `tools/verify_proof.py proof.json` | **VALID, exit 0 at every step**; digest `e24bf317…48934`; `signature: absent`, `external_truth: not-established` (correctly scoped) |
 | Demo → prove regression | (UX_AUDIT headline defect: README prove on fresh DB failed) | **Fixed and re-verified** — `habitat demo` seeds `run-42` with `sample: true`; the advertised command now succeeds |
 
-## 4. Honest demo labelling — audited this phase
+## 5. Honest demo labelling — audited this phase
 
 | Surface | Label present? | Evidence |
 |---|---|---|
@@ -73,7 +73,7 @@ without its boundary sentence. Mitigation in place: the boundary travels inside 
 verifier output (`authenticity: not-established`), so any *verifiable* copy stays honest even if a screenshot doesn't.
 Do not strip `sample: true` from demo actions — it is load-bearing.
 
-## 5. What would change this verdict
+## 6. What would change this verdict
 
 | To flip… | Required evidence |
 |---|---|
@@ -82,7 +82,7 @@ Do not strip `sample: true` from demo actions — it is load-bearing.
 | Monetization: real | One executed H-experiment with recorded outcome (`MONETIZATION.md` §6) — especially a buyer test. Until then: hypothesis. |
 | "Proxy of truth" claims | Never, by design — `external_truth` stays `not-established` by the verifier alone. This is a product boundary, not a missing feature. |
 
-## 6. Release posture
+## 7. Release posture
 
 - **Do not merge/push/deploy from this phase** — docs committed on `flagship-excellence` only, per brief.
 - Next human decision (owner): persistent-host deployment *or* explicit library-only positioning. Either is
